@@ -17,6 +17,45 @@ from auth_utils import (
 auth_bp = Blueprint("auth", __name__)
 
 
+def _get_user_id_by_email(email: str) -> str | None:
+    """Look up a Supabase auth user UUID by email using the service-role admin API."""
+    try:
+        svc = get_service_client()
+        page = 1
+        while True:
+            users = svc.auth.admin.list_users(page=page, per_page=1000)
+            if not users:
+                break
+            for u in users:
+                if u.email and u.email.lower() == email.lower():
+                    return u.id
+            if len(users) < 1000:
+                break
+            page += 1
+    except Exception as exc:
+        print(f"[auth] _get_user_id_by_email failed: {exc}")
+    return None
+
+
+def _auto_confirm_and_login(email: str, password: str):
+    """
+    Confirm a user's email via the admin API then retry sign-in.
+    Returns the auth response or raises an exception.
+    """
+    uid = _get_user_id_by_email(email)
+    if uid:
+        try:
+            svc = get_service_client()
+            svc.auth.admin.update_user_by_id(uid, {"email_confirm": True})
+            print(f"[auth] auto-confirmed email for uid={uid}")
+        except Exception as e:
+            print(f"[auth] update_user_by_id failed: {e}")
+    # Retry sign-in regardless — if confirm worked it will succeed
+    return get_anon_client().auth.sign_in_with_password(
+        {"email": email, "password": password}
+    )
+
+
 def _ensure_profile(user_id: str, email: str) -> dict:
     # Returns the user_profiles row, creating it if missing.
     svc = get_service_client()
@@ -184,22 +223,36 @@ def login():
                                    error="Email and password are required.",
                                    email=email)
 
+        resp = None
         try:
             client = get_anon_client()
             resp = client.auth.sign_in_with_password({"email": email, "password": password})
         except Exception as exc:
             msg = str(exc)
             print(f"[auth] sign_in failed for {email}: {msg}")
-            if any(k in msg.lower() for k in ["invalid login", "invalid credentials",
-                                               "email not confirmed", "invalid"]):
+
+            # Supabase returns "Email not confirmed" when the user was created
+            # via the dashboard "Add User" without auto-confirming the email.
+            # Auto-confirm via the service-role admin API and retry once.
+            if "email not confirmed" in msg.lower() or "not confirmed" in msg.lower():
+                try:
+                    resp = _auto_confirm_and_login(email, password)
+                except Exception as confirm_exc:
+                    print(f"[auth] auto-confirm failed for {email}: {confirm_exc}")
+                    return render_template("auth/login.html",
+                                           active_tab=active_tab,
+                                           error="Your email is not confirmed. Ask the super admin to confirm your account in Supabase.",
+                                           email=email)
+            elif any(k in msg.lower() for k in ["invalid login", "invalid credentials", "invalid"]):
                 return render_template("auth/login.html",
                                        active_tab=active_tab,
-                                       error="Invalid email or password.",
+                                       error="Invalid email or password. Please check your credentials.",
                                        email=email)
-            return render_template("auth/login.html",
-                                   active_tab=active_tab,
-                                   error=f"Login error: {msg}",
-                                   email=email)
+            else:
+                return render_template("auth/login.html",
+                                       active_tab=active_tab,
+                                       error=f"Login error: {msg}",
+                                       email=email)
 
         if not resp or not resp.user:
             return render_template("auth/login.html",

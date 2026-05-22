@@ -3,158 +3,302 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Login | THIKA TECHNICAL MANAGEMENT SYSTEM</title>
+  <title>Sign In — Thika Technical Management System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --navy:      #0a1f44;
+      --navy-mid:  #112358;
+      --blue:      #1a56db;
+      --blue-light:#2563eb;
+      --red:       #dc2626;
+      --red-dark:  #b91c1c;
+      --white:     #ffffff;
+      --glass:     rgba(255,255,255,0.06);
+      --border:    rgba(255,255,255,0.10);
+      --text-dim:  rgba(255,255,255,0.55);
+      --text-mid:  rgba(255,255,255,0.75);
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+    }
 
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       min-height: 100vh;
-      background: linear-gradient(160deg, #0d2b6b 0%, #1a4a9f 50%, #0d2b6b 100%);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--navy);
+    }
+
+    /* ── Left panel ── */
+    .panel-left {
+      position: relative;
       display: flex;
-      align-items: center;
+      flex-direction: column;
       justify-content: center;
-      padding: 20px;
+      align-items: center;
+      padding: 60px 48px;
+      background: linear-gradient(145deg, #0d2554 0%, #0a1f44 60%, #071530 100%);
+      overflow: hidden;
     }
 
-    .card {
-      background: linear-gradient(180deg, #1a3a7a 0%, #152f6a 100%);
-      border-radius: 20px;
-      width: 100%;
-      max-width: 420px;
-      padding: 40px 36px 32px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-      border: 1px solid rgba(255,255,255,0.08);
+    .panel-left::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 30%, rgba(26,86,219,0.18) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 50% at 80% 70%, rgba(220,38,38,0.10) 0%, transparent 70%);
+      pointer-events: none;
     }
 
-    /* ── Logo & title ── */
-    .logo-wrap {
-      text-align: center;
-      margin-bottom: 28px;
-    }
-
-    .logo-wrap img {
-      width: 90px;
-      height: 90px;
+    /* decorative circles */
+    .panel-left::after {
+      content: '';
+      position: absolute;
+      width: 420px;
+      height: 420px;
       border-radius: 50%;
-      border: 3px solid rgba(255,255,255,0.3);
+      border: 1px solid rgba(255,255,255,0.04);
+      bottom: -120px;
+      right: -120px;
+      pointer-events: none;
+    }
+
+    .brand {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      max-width: 380px;
+    }
+
+    .brand-logo {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
       object-fit: cover;
+      border: 3px solid rgba(255,255,255,0.20);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.40);
+      margin-bottom: 28px;
       background: #fff;
     }
 
-    .logo-wrap h1 {
-      color: #fff;
-      font-size: 18px;
+    .brand h1 {
+      color: var(--white);
+      font-size: 22px;
       font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-top: 16px;
+      letter-spacing: 0.3px;
       line-height: 1.3;
-    }
-
-    .logo-wrap p {
-      color: rgba(255,255,255,0.65);
-      font-size: 14px;
-      margin-top: 6px;
-    }
-
-    /* ── Error ── */
-    .error-box {
-      background: rgba(220,38,38,0.2);
-      border: 1px solid rgba(220,38,38,0.4);
-      color: #fca5a5;
-      border-radius: 8px;
-      padding: 10px 14px;
-      font-size: 13px;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .message-box {
-      background: rgba(56, 189, 248, 0.12);
-      border: 1px solid rgba(56, 189, 248, 0.35);
-      color: #bae6fd;
-      border-radius: 10px;
-      padding: 12px 14px;
-      margin-bottom: 18px;
-      font-size: 0.88rem;
-    }
-
-    .tab-row {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 22px;
-    }
-
-    .tab-button {
-      flex: 1;
-      padding: 12px 0;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.14);
-      background: rgba(255,255,255,0.08);
-      color: rgba(255,255,255,0.8);
       text-transform: uppercase;
-      font-size: 0.76rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all .2s;
-    }
-
-    .tab-button.active {
-      background: #e53935;
-      color: #fff;
-      border-color: #e53935;
-    }
-
-    .info-text {
-      color: rgba(255,255,255,0.65);
-      font-size: 13px;
-      margin: 16px 0 20px;
-      line-height: 1.6;
-      text-align: center;
-    }
-
-    /* ── Inputs ── */
-    .input-wrap {
-      position: relative;
       margin-bottom: 14px;
     }
 
-    .input-wrap i {
+    .brand p {
+      color: var(--text-dim);
+      font-size: 14px;
+      line-height: 1.7;
+      font-weight: 400;
+    }
+
+    .brand-divider {
+      width: 48px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--blue), var(--red));
+      border-radius: 2px;
+      margin: 20px auto;
+    }
+
+    .brand-stats {
+      display: flex;
+      gap: 32px;
+      margin-top: 36px;
+      justify-content: center;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-num {
+      color: var(--white);
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .stat-label {
+      color: var(--text-dim);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-top: 2px;
+    }
+
+    /* ── Right panel (form) ── */
+    .panel-right {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 48px;
+      background: #f0f4ff;
+      overflow-y: auto;
+    }
+
+    .form-card {
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .form-card h2 {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 6px;
+    }
+
+    .form-card .subtitle {
+      font-size: 14px;
+      color: #64748b;
+      margin-bottom: 28px;
+    }
+
+    /* ── Alert boxes ── */
+    .alert {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      margin-bottom: 18px;
+      line-height: 1.5;
+    }
+
+    .alert-error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+    }
+
+    .alert-success {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e40af;
+    }
+
+    .alert i { margin-top: 1px; flex-shrink: 0; }
+
+    /* ── Tabs ── */
+    .tab-row {
+      display: flex;
+      background: #e2e8f0;
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 24px;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px 0;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+    }
+
+    .tab-btn.active {
+      background: var(--white);
+      color: var(--navy);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    }
+
+    /* ── Form fields ── */
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .input-wrap .icon {
       position: absolute;
-      left: 16px;
+      left: 14px;
       top: 50%;
       transform: translateY(-50%);
-      color: rgba(255,255,255,0.4);
-      font-size: 15px;
+      color: #94a3b8;
+      font-size: 14px;
+      pointer-events: none;
     }
 
     .input-wrap input {
       width: 100%;
-      padding: 15px 16px 15px 44px;
-      background: rgba(255,255,255,0.08);
-      border: 1.5px solid rgba(255,255,255,0.12);
+      padding: 13px 14px 13px 42px;
+      border: 1.5px solid #e2e8f0;
       border-radius: 10px;
-      color: #fff;
       font-size: 14px;
-      transition: border-color .2s, background .2s;
+      font-family: inherit;
+      color: #1e293b;
+      background: var(--white);
+      transition: border-color .2s, box-shadow .2s;
       outline: none;
     }
 
-    .input-wrap input::placeholder { color: rgba(255,255,255,0.4); }
+    .input-wrap input::placeholder { color: #94a3b8; }
 
     .input-wrap input:focus {
-      border-color: rgba(255,255,255,0.35);
-      background: rgba(255,255,255,0.12);
+      border-color: var(--blue-light);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.10);
     }
 
-    /* ── Remember me ── */
+    /* password toggle */
+    .input-wrap .toggle-pw {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 14px;
+      background: none;
+      border: none;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .input-wrap .toggle-pw:hover { color: #475569; }
+
+    .input-wrap input.has-toggle { padding-right: 42px; }
+
+    /* ── Remember row ── */
     .meta-row {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       margin-bottom: 22px;
       font-size: 13px;
     }
@@ -163,155 +307,253 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      color: rgba(255,255,255,0.75);
+      color: #475569;
       cursor: pointer;
+      font-weight: 500;
     }
 
     .meta-row input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      accent-color: #e53935;
+      width: 15px;
+      height: 15px;
+      accent-color: var(--blue-light);
       cursor: pointer;
     }
 
-    /* ── Login button ── */
-    .btn-login {
+    /* ── Submit button ── */
+    .btn-submit {
       width: 100%;
-      padding: 15px;
-      background: linear-gradient(135deg, #e53935, #c62828);
-      color: #fff;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--blue-light), #1d4ed8);
+      color: var(--white);
       border: none;
-      border-radius: 50px;
+      border-radius: 10px;
       font-size: 15px;
-      font-weight: 800;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.3px;
       cursor: pointer;
-      transition: filter .2s, transform .1s;
-      box-shadow: 0 4px 20px rgba(229,57,53,0.45);
+      transition: filter .2s, transform .1s, box-shadow .2s;
+      box-shadow: 0 4px 16px rgba(37,99,235,0.35);
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
 
-    .btn-login:hover  { filter: brightness(1.1); }
-    .btn-login:active { transform: scale(0.98); }
+    .btn-submit:hover  { filter: brightness(1.08); box-shadow: 0 6px 22px rgba(37,99,235,0.45); }
+    .btn-submit:active { transform: scale(0.98); }
 
-    @media (max-width: 480px) {
-      .card { padding: 32px 22px 26px; }
-      .logo-wrap img { width: 76px; height: 76px; }
-      .logo-wrap h1 { font-size: 16px; }
+    /* ── Footer ── */
+    .form-footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      body { grid-template-columns: 1fr; }
+      .panel-left { display: none; }
+      .panel-right { padding: 32px 24px; background: var(--navy); }
+      .form-card h2 { color: var(--white); }
+      .form-card .subtitle { color: var(--text-dim); }
+      .field label { color: var(--text-mid); }
+      .input-wrap input { background: var(--glass); border-color: var(--border); color: var(--white); }
+      .input-wrap input::placeholder { color: var(--text-dim); }
+      .input-wrap input:focus { border-color: rgba(255,255,255,0.35); box-shadow: none; }
+      .tab-row { background: rgba(255,255,255,0.08); }
+      .tab-btn { color: var(--text-dim); }
+      .tab-btn.active { background: rgba(255,255,255,0.15); color: var(--white); box-shadow: none; }
+      .meta-row label { color: var(--text-mid); }
+      .alert-error { background: rgba(220,38,38,0.15); border-color: rgba(220,38,38,0.3); color: #fca5a5; }
+      .alert-success { background: rgba(37,99,235,0.15); border-color: rgba(37,99,235,0.3); color: #bfdbfe; }
     }
   </style>
 </head>
 <body>
 
-<div class="card">
-
-  <div class="logo-wrap">
-    <img src="{{ LOGO_URL }}" alt="TMS Logo">
-    <h1>THIKA TECHNICAL MANAGEMENT SYSTEM</h1>
-    <p>Access for trainees and staff in one unified login page.</p>
-  </div>
-
-  {% if registered %}
-  <div class="message-box">
-    Registration completed. Please log in with your admission number and password.
-  </div>
-  {% endif %}
-
-  {% if error %}
-  <div class="error-box">
-    <i class="fas fa-exclamation-circle"></i> {{ error }}
-  </div>
-  {% endif %}
-
-  <div class="info-text">
-    Trainees sign in with Admission Number and Password. Other users sign in with Email Address and Password.
-  </div>
-
-  <div class="tab-row">
-    <button type="button" id="staff-tab" class="tab-button{% if active_tab != 'trainee' %} active{% endif %}" onclick="switchTab('staff')">Staff Login</button>
-    <button type="button" id="trainee-tab" class="tab-button{% if active_tab == 'trainee' %} active{% endif %}" onclick="switchTab('trainee')">Trainee Login</button>
-  </div>
-
-  <div id="staff-form" style="display: {% if active_tab == 'trainee' %}none{% else %}block{% endif %};">
-    <form method="post" action="/auth/login">
-      <input type="hidden" name="login_type" value="staff">
-
-      <div class="input-wrap">
-        <i class="fas fa-envelope"></i>
-        <input type="email" name="email"
-               placeholder="Email Address"
-               value="{{ request.form.get('email', '') }}"
-               required autocomplete="email">
+<!-- ── Left branding panel ── -->
+<div class="panel-left">
+  <div class="brand">
+    <img src="{{ LOGO_URL }}" alt="TTTTI Logo" class="brand-logo">
+    <h1>Thika Technical Training Institute</h1>
+    <div class="brand-divider"></div>
+    <p>Integrated management system for trainees, trainers, and administrators — attendance, results, portfolios, and more.</p>
+    <div class="brand-stats">
+      <div class="stat">
+        <div class="stat-num">1</div>
+        <div class="stat-label">Platform</div>
       </div>
-
-      <div class="input-wrap">
-        <i class="fas fa-lock"></i>
-        <input type="password" name="password"
-               placeholder="Password"
-               required autocomplete="current-password">
+      <div class="stat">
+        <div class="stat-num">4</div>
+        <div class="stat-label">Roles</div>
       </div>
-
-      <div class="meta-row">
-        <label>
-          <input type="checkbox" name="remember"> Remember me
-        </label>
+      <div class="stat">
+        <div class="stat-num">24/7</div>
+        <div class="stat-label">Access</div>
       </div>
-
-      <button type="submit" class="btn-login">Login</button>
-    </form>
+    </div>
   </div>
-
-  <div id="trainee-form" style="display: {% if active_tab == 'trainee' %}block{% else %}none{% endif %};">
-    <form method="post" action="/auth/login">
-      <input type="hidden" name="login_type" value="trainee">
-
-      <div class="input-wrap">
-        <i class="fas fa-id-card"></i>
-        <input type="text" name="admission_number"
-               placeholder="Admission Number"
-               value="{{ request.form.get('admission_number', '') }}"
-               maxlength="10" required autocomplete="off">
-      </div>
-
-      <div class="input-wrap">
-        <i class="fas fa-lock"></i>
-        <input type="password" name="password"
-               placeholder="Password"
-               required autocomplete="current-password">
-      </div>
-
-      <div class="meta-row">
-        <label>
-          <input type="checkbox" name="remember"> Remember me
-        </label>
-      </div>
-
-      <button type="submit" class="btn-login">Login</button>
-    </form>
-  </div>
-
-  <script>
-    function switchTab(tab) {
-      var staffForm = document.getElementById('staff-form');
-      var traineeForm = document.getElementById('trainee-form');
-      var staffTab = document.getElementById('staff-tab');
-      var traineeTab = document.getElementById('trainee-tab');
-
-      if (tab === 'trainee') {
-        staffForm.style.display = 'none';
-        traineeForm.style.display = 'block';
-        staffTab.classList.remove('active');
-        traineeTab.classList.add('active');
-      } else {
-        staffForm.style.display = 'block';
-        traineeForm.style.display = 'none';
-        staffTab.classList.add('active');
-        traineeTab.classList.remove('active');
-      }
-    }
-  </script>
-
 </div>
+
+<!-- ── Right form panel ── -->
+<div class="panel-right">
+  <div class="form-card">
+
+    <h2>Welcome back</h2>
+    <p class="subtitle">Sign in to your account to continue</p>
+
+    {% if registered %}
+    <div class="alert alert-success">
+      <i class="fas fa-check-circle"></i>
+      <span>Registration complete. Sign in with your admission number and password.</span>
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="alert alert-error">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <!-- Tabs -->
+    <div class="tab-row">
+      <button type="button" id="staff-tab"
+        class="tab-btn{% if active_tab != 'trainee' %} active{% endif %}"
+        onclick="switchTab('staff')">
+        <i class="fas fa-user-tie"></i> Staff / Admin
+      </button>
+      <button type="button" id="trainee-tab"
+        class="tab-btn{% if active_tab == 'trainee' %} active{% endif %}"
+        onclick="switchTab('trainee')">
+        <i class="fas fa-user-graduate"></i> Trainee
+      </button>
+    </div>
+
+    <!-- Staff form -->
+    <div id="staff-form" style="display:{% if active_tab == 'trainee' %}none{% else %}block{% endif %};">
+      <form method="post" action="/auth/login" autocomplete="on">
+        <input type="hidden" name="login_type" value="staff">
+
+        <div class="field">
+          <label for="staff-email">Email Address</label>
+          <div class="input-wrap">
+            <i class="fas fa-envelope icon"></i>
+            <input type="email" id="staff-email" name="email"
+                   placeholder="you@example.com"
+                   value="{{ request.form.get('email', '') }}"
+                   required autocomplete="email">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="staff-password">Password</label>
+          <div class="input-wrap">
+            <i class="fas fa-lock icon"></i>
+            <input type="password" id="staff-password" name="password"
+                   placeholder="Enter your password"
+                   required autocomplete="current-password"
+                   class="has-toggle">
+            <button type="button" class="toggle-pw" onclick="togglePw('staff-password', this)" tabindex="-1">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="meta-row">
+          <label>
+            <input type="checkbox" name="remember"> Remember me
+          </label>
+        </div>
+
+        <button type="submit" class="btn-submit">
+          <i class="fas fa-sign-in-alt"></i> Sign In
+        </button>
+      </form>
+    </div>
+
+    <!-- Trainee form -->
+    <div id="trainee-form" style="display:{% if active_tab == 'trainee' %}block{% else %}none{% endif %};">
+      <form method="post" action="/auth/login" autocomplete="on">
+        <input type="hidden" name="login_type" value="trainee">
+
+        <div class="field">
+          <label for="admission-number">Admission Number</label>
+          <div class="input-wrap">
+            <i class="fas fa-id-card icon"></i>
+            <input type="text" id="admission-number" name="admission_number"
+                   placeholder="e.g. TTI/001/2024"
+                   value="{{ request.form.get('admission_number', '') }}"
+                   maxlength="20" required autocomplete="off">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="trainee-password">Password</label>
+          <div class="input-wrap">
+            <i class="fas fa-lock icon"></i>
+            <input type="password" id="trainee-password" name="password"
+                   placeholder="Enter your password"
+                   required autocomplete="current-password"
+                   class="has-toggle">
+            <button type="button" class="toggle-pw" onclick="togglePw('trainee-password', this)" tabindex="-1">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="meta-row">
+          <label>
+            <input type="checkbox" name="remember"> Remember me
+          </label>
+        </div>
+
+        <button type="submit" class="btn-submit">
+          <i class="fas fa-sign-in-alt"></i> Sign In
+        </button>
+      </form>
+    </div>
+
+    <div class="form-footer">
+      &copy; 2026 Thika Technical Training Institute
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function switchTab(tab) {
+    var staffForm   = document.getElementById('staff-form');
+    var traineeForm = document.getElementById('trainee-form');
+    var staffTab    = document.getElementById('staff-tab');
+    var traineeTab  = document.getElementById('trainee-tab');
+    if (tab === 'trainee') {
+      staffForm.style.display   = 'none';
+      traineeForm.style.display = 'block';
+      staffTab.classList.remove('active');
+      traineeTab.classList.add('active');
+    } else {
+      staffForm.style.display   = 'block';
+      traineeForm.style.display = 'none';
+      staffTab.classList.add('active');
+      traineeTab.classList.remove('active');
+    }
+  }
+
+  function togglePw(inputId, btn) {
+    var input = document.getElementById(inputId);
+    var icon  = btn.querySelector('i');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.classList.replace('fa-eye', 'fa-eye-slash');
+    } else {
+      input.type = 'password';
+      icon.classList.replace('fa-eye-slash', 'fa-eye');
+    }
+  }
+</script>
 
 </body>
 </html>
