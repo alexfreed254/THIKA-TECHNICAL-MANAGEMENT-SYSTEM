@@ -7,14 +7,12 @@ import os
 import traceback
 from datetime import timedelta
 from flask import Flask, render_template
-from dotenv import load_dotenv
 from werkzeug.middleware.proxy_fix import ProxyFix
-
-load_dotenv()
+from config import Config
 
 app = Flask(__name__)
-# Fallback secret key for local dev — always set SECRET_KEY in production
-app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-in-production")
+app.config.from_object(Config)
+app.secret_key = app.config.get("SECRET_KEY", "dev-secret-change-in-production")
 
 # ── Session / Cookie config ───────────────────────────────────────────────────
 app.config["SESSION_COOKIE_SAMESITE"]    = "Lax"   # "None" requires HTTPS everywhere
@@ -36,12 +34,27 @@ def before_request():
         pass  # never block a request due to token refresh failure
 
 # ── Blueprints ────────────────────────────────────────────────────────────────
-from routes.main        import main_bp
-from routes.auth        import auth_bp
-from routes.super_admin import super_admin_bp
-from routes.dept_admin  import dept_admin_bp
-from routes.lecturer    import lecturer_bp
-from routes.student     import student_bp
+from routes.main          import main_bp
+from routes.auth          import auth_bp
+from routes.super_admin   import super_admin_bp
+from routes.dept_admin    import dept_admin_bp
+from routes.lecturer      import lecturer_bp
+from routes.student       import student_bp
+from routes.exam_booking  import exam_bp
+from routes.verification  import verif_bp
+from routes.dual_training import dual_bp
+from routes.logbook       import logbook_bp
+from routes.results       import results_bp
+from routes.clearance     import clearance_bp
+from routes.poe           import poe_bp
+from routes.notifications import notif_bp
+
+# E-Portfolio MVP integration (mounted under /portfolio)
+# Import sub-modules to register their routes onto portfolio_bp
+import routes.portfolio.trainee   # noqa: F401
+import routes.portfolio.trainer   # noqa: F401
+import routes.portfolio.dept_admin  # noqa: F401
+import routes.portfolio.super_admin  # noqa: F401
 
 app.register_blueprint(main_bp)
 app.register_blueprint(auth_bp,        url_prefix="/auth")
@@ -49,14 +62,36 @@ app.register_blueprint(super_admin_bp, url_prefix="/super-admin")
 app.register_blueprint(dept_admin_bp,  url_prefix="/dept-admin")
 app.register_blueprint(lecturer_bp,    url_prefix="/lecturer")
 app.register_blueprint(student_bp,     url_prefix="/student")
+app.register_blueprint(exam_bp,        url_prefix="/exam")
+app.register_blueprint(verif_bp,       url_prefix="/verification")
+app.register_blueprint(dual_bp,        url_prefix="/dual-training")
+app.register_blueprint(logbook_bp,     url_prefix="/logbook")
+app.register_blueprint(results_bp,     url_prefix="/results")
+app.register_blueprint(clearance_bp,   url_prefix="/clearance")
+app.register_blueprint(poe_bp,         url_prefix="/poe")
+app.register_blueprint(notif_bp,       url_prefix="/notifications")
+
+# Register E-Portfolio blueprint once.
+from routes.portfolio import portfolio_bp
+app.register_blueprint(portfolio_bp, url_prefix="")
+
 
 # ── Template globals ──────────────────────────────────────────────────────────
 @app.context_processor
 def inject_globals():
     from auth_utils import current_user
+    from notify import get_unread_count
+    user = current_user()
+    unread_count = 0
+    if user:
+        try:
+            unread_count = get_unread_count(user["id"])
+        except Exception:
+            pass
     return {
-        "LOGO_URL":     "/static/assets/THIKATTILOGO.jpg",
-        "current_user": current_user(),
+        "LOGO_URL":      "/static/images/THIKATTILOGO.jpg",
+        "current_user":  user,
+        "unread_notifs": unread_count,
     }
 
 # ── Jinja2 filter: convert UTC ISO string → EAT display string ───────────────

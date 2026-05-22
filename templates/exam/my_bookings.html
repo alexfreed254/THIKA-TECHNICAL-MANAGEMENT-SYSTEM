@@ -1,0 +1,85 @@
+{% extends "base_tailwind.html" %}
+{% block title %}My Exam Bookings{% endblock %}
+{% block page_title %}My Exam Bookings{% endblock %}
+
+{% block sidebar_nav %}
+<div class="menu-section">Examination</div>
+<a href="/exam/my-bookings" class="sidebar-link"><i class="fas fa-list fa-fw"></i> My Bookings</a>
+<a href="/exam/book" class="sidebar-link"><i class="fas fa-plus-circle fa-fw"></i> New Booking</a>
+<div class="menu-section">My Account</div>
+<a href="/student/dashboard" class="sidebar-link"><i class="fas fa-tachometer-alt fa-fw"></i> Dashboard</a>
+<a href="/student/unit-detail" class="sidebar-link"><i class="fas fa-book fa-fw"></i> Attendance</a>
+<a href="/results/my-results" class="sidebar-link"><i class="fas fa-chart-bar fa-fw"></i> My Results</a>
+<a href="/clearance/my-clearance" class="sidebar-link"><i class="fas fa-certificate fa-fw"></i> Clearance</a>
+<a href="/logbook/dashboard" class="sidebar-link"><i class="fas fa-book-open fa-fw"></i> Logbook</a>
+{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h2 class="text-xl font-bold text-gray-800">Exam Bookings</h2>
+    <p class="text-sm text-gray-500 mt-1">{{ student.full_name }} — {{ student.admission_number }}</p>
+  </div>
+  <a href="/exam/book" class="btn-primary"><i class="fas fa-plus mr-2"></i>New Booking</a>
+</div>
+
+{% if not bookings %}
+<div class="card text-center py-16">
+  <i class="fas fa-file-alt text-5xl text-gray-300 mb-4"></i>
+  <p class="text-gray-500 text-lg font-medium">No exam bookings yet</p>
+  <p class="text-gray-400 text-sm mt-1">Click "New Booking" to register for an examination.</p>
+  <a href="/exam/book" class="btn-primary mt-4 inline-block">Book Exam</a>
+</div>
+{% else %}
+<div class="grid gap-4">
+  {% for b in bookings %}
+  <div class="card hover:shadow-md transition-shadow">
+    <div class="flex items-start justify-between flex-wrap gap-3">
+      <div>
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-sm font-bold text-gray-800">Booking #{{ b.id }}</span>
+          {% set s = b.status %}
+          {% if s == 'draft' %}<span class="badge-info">Draft</span>
+          {% elif s == 'submitted' %}<span class="badge-pending">Submitted — Awaiting HOD</span>
+          {% elif s == 'hod_approved' %}<span class="badge-info">HOD Approved — Awaiting Registrar</span>
+          {% elif s == 'hod_rejected' %}<span class="badge-rejected">HOD Rejected</span>
+          {% elif s == 'registrar_approved' %}<span class="badge-approved">Approved — Download Card</span>
+          {% elif s == 'registrar_rejected' %}<span class="badge-rejected">Registrar Rejected</span>
+          {% elif s == 'confirmed' %}<span class="badge-approved">Confirmed</span>
+          {% endif %}
+        </div>
+        <p class="text-sm text-gray-600"><i class="fas fa-calendar-alt mr-1 text-blue-500"></i>
+          Series: {{ (b.exam_series or {}).get('name', '—') }}</p>
+        <p class="text-sm text-gray-600 mt-1"><i class="fas fa-map-marker-alt mr-1 text-blue-500"></i>
+          Center: {{ (b.assessment_centers or {}).get('name', '—') }}</p>
+        <p class="text-sm text-gray-600 mt-1"><i class="fas fa-graduation-cap mr-1 text-blue-500"></i>
+          {{ b.course_name or '—' }} — {{ b.module_level or '—' }}</p>
+        <p class="text-xs text-gray-400 mt-2">Submitted: {{ b.created_at | to_eat }}</p>
+      </div>
+      <div class="flex flex-col gap-2 items-end">
+        <p class="text-lg font-bold text-blue-700">KES {{ "%.2f"|format(b.total_cost or 0) }}</p>
+        <a href="/exam/booking/{{ b.id }}" class="btn-ghost text-xs">
+          <i class="fas fa-eye mr-1"></i>View Details
+        </a>
+        {% if b.status in ('registrar_approved', 'confirmed') %}
+        <a href="/exam/exam-card/{{ b.id }}" class="btn-success text-xs" target="_blank">
+          <i class="fas fa-id-card mr-1"></i>Download Exam Card
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    {% if b.hod_comment %}
+    <div class="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200 text-xs text-yellow-800">
+      <strong>HOD Comment:</strong> {{ b.hod_comment }}
+    </div>
+    {% endif %}
+    {% if b.registrar_comment %}
+    <div class="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200 text-xs text-blue-800">
+      <strong>Registrar Comment:</strong> {{ b.registrar_comment }}
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

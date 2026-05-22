@@ -1,0 +1,102 @@
+{% extends "base_tailwind.html" %}
+{% block title %}Employers{% endblock %}
+{% block page_title %}Employer Management{% endblock %}
+
+{% block sidebar_nav %}
+<div class="menu-section">Dual Training</div>
+<a href="/dual-training/employers" class="sidebar-link"><i class="fas fa-building fa-fw"></i> Employers</a>
+<a href="/dual-training/allocations" class="sidebar-link"><i class="fas fa-industry fa-fw"></i> Allocations</a>
+<a href="/dual-training/monitoring" class="sidebar-link"><i class="fas fa-chart-line fa-fw"></i> Monitoring</a>
+<div class="menu-section">Logbook</div>
+<a href="/logbook/admin/placements" class="sidebar-link"><i class="fas fa-briefcase fa-fw"></i> Placements</a>
+<a href="/logbook/trainer/monitoring" class="sidebar-link"><i class="fas fa-eye fa-fw"></i> Logbook Monitor</a>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-1">
+    <div class="card">
+      <h3 class="font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200">
+        <i class="fas fa-plus-circle mr-2 text-blue-600"></i>Add Employer
+      </h3>
+      {% if error %}<div class="flash-error mb-3 text-xs"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>{% endif %}
+      <form method="POST">
+        <input type="hidden" name="action" value="create">
+        <div class="space-y-3">
+          <div>
+            <label class="form-label text-xs">Company Name <span class="text-red-500">*</span></label>
+            <input type="text" name="company_name" class="form-input text-xs" required placeholder="e.g. Kenya Power Ltd">
+          </div>
+          <div>
+            <label class="form-label text-xs">Contact Person</label>
+            <input type="text" name="contact_person" class="form-input text-xs" placeholder="HR Manager name">
+          </div>
+          <div>
+            <label class="form-label text-xs">Email</label>
+            <input type="email" name="email" class="form-input text-xs" placeholder="hr@company.co.ke">
+          </div>
+          <div>
+            <label class="form-label text-xs">Phone</label>
+            <input type="tel" name="phone" class="form-input text-xs" placeholder="07XXXXXXXX">
+          </div>
+          <div>
+            <label class="form-label text-xs">Industry Sector</label>
+            <input type="text" name="industry_sector" class="form-input text-xs" placeholder="e.g. Electrical Engineering">
+          </div>
+          <div>
+            <label class="form-label text-xs">Address</label>
+            <textarea name="address" class="form-input text-xs" rows="2" placeholder="Physical address..."></textarea>
+          </div>
+          <button type="submit" class="btn-primary w-full text-sm">
+            <i class="fas fa-plus mr-2"></i>Add Employer
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="lg:col-span-2">
+    <div class="card overflow-hidden p-0">
+      <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+        <h3 class="font-bold text-gray-800">Employers ({{ employers|length }})</h3>
+      </div>
+      {% if not employers %}
+      <div class="text-center py-12 text-gray-400">
+        <i class="fas fa-building text-4xl mb-3"></i>
+        <p>No employers added yet.</p>
+      </div>
+      {% else %}
+      <div class="divide-y divide-gray-100">
+        {% for e in employers %}
+        <div class="p-4 hover:bg-gray-50 transition-colors">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-building text-blue-700"></i>
+              </div>
+              <div>
+                <p class="font-bold text-gray-800">{{ e.company_name }}</p>
+                {% if e.contact_person %}<p class="text-xs text-gray-500">Contact: {{ e.contact_person }}</p>{% endif %}
+                {% if e.industry_sector %}<p class="text-xs text-gray-400">{{ e.industry_sector }}</p>{% endif %}
+                <div class="flex gap-3 mt-1 text-xs text-gray-400">
+                  {% if e.email %}<span><i class="fas fa-envelope mr-1"></i>{{ e.email }}</span>{% endif %}
+                  {% if e.phone %}<span><i class="fas fa-phone mr-1"></i>{{ e.phone }}</span>{% endif %}
+                </div>
+              </div>
+            </div>
+            <form method="POST" onsubmit="return confirm('Delete this employer?')">
+              <input type="hidden" name="action" value="delete">
+              <input type="hidden" name="employer_id" value="{{ e.id }}">
+              <button type="submit" class="btn-danger text-xs py-1 px-2">
+                <i class="fas fa-trash"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

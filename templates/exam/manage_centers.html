@@ -1,0 +1,91 @@
+{% extends "base_tailwind.html" %}
+{% block title %}Assessment Centers{% endblock %}
+{% block page_title %}Assessment Center Management{% endblock %}
+
+{% block sidebar_nav %}
+<div class="menu-section">Examination</div>
+<a href="/exam/admin/all-bookings" class="sidebar-link"><i class="fas fa-list fa-fw"></i> All Bookings</a>
+<a href="/exam/admin/series" class="sidebar-link"><i class="fas fa-calendar fa-fw"></i> Exam Series</a>
+<a href="/exam/admin/centers" class="sidebar-link"><i class="fas fa-building fa-fw"></i> Centers</a>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-1">
+    <div class="card">
+      <h3 class="font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200">
+        <i class="fas fa-plus-circle mr-2 text-blue-600"></i>New Center
+      </h3>
+      {% if error %}<div class="flash-error mb-3 text-xs"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>{% endif %}
+      <form method="POST">
+        <input type="hidden" name="action" value="create">
+        <div class="space-y-3">
+          <div>
+            <label class="form-label text-xs">Center Name <span class="text-red-500">*</span></label>
+            <input type="text" name="name" class="form-input text-xs" required placeholder="e.g. TTTTI Main Campus">
+          </div>
+          <div>
+            <label class="form-label text-xs">Location</label>
+            <input type="text" name="location" class="form-input text-xs" placeholder="e.g. Thika, Kiambu County">
+          </div>
+          <div>
+            <label class="form-label text-xs">Capacity</label>
+            <input type="number" name="capacity" class="form-input text-xs" value="0" min="0">
+          </div>
+          <button type="submit" class="btn-primary w-full text-sm">
+            <i class="fas fa-plus mr-2"></i>Add Center
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="lg:col-span-2">
+    <div class="card overflow-hidden p-0">
+      <div class="px-4 py-3 border-b border-gray-100">
+        <h3 class="font-bold text-gray-800">Assessment Centers ({{ centers|length }})</h3>
+      </div>
+      {% if not centers %}
+      <div class="text-center py-12 text-gray-400">
+        <i class="fas fa-building text-4xl mb-3"></i>
+        <p>No centers added yet.</p>
+      </div>
+      {% else %}
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="bg-blue-700">
+            <th class="table-th">Name</th>
+            <th class="table-th">Location</th>
+            <th class="table-th text-center">Capacity</th>
+            <th class="table-th text-center">Active</th>
+            <th class="table-th">Action</th>
+          </tr></thead>
+          <tbody>
+            {% for c in centers %}
+            <tr class="table-tr">
+              <td class="table-td font-medium">{{ c.name }}</td>
+              <td class="table-td text-xs">{{ c.location or '—' }}</td>
+              <td class="table-td text-center">{{ c.capacity or 0 }}</td>
+              <td class="table-td text-center">
+                {% if c.is_active %}<span class="badge-approved">Active</span>
+                {% else %}<span class="badge-rejected">Inactive</span>{% endif %}
+              </td>
+              <td class="table-td">
+                <form method="POST" onsubmit="return confirm('Delete this center?')">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="center_id" value="{{ c.id }}">
+                  <button type="submit" class="btn-danger text-xs py-1 px-2">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

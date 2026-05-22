@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Exam Card — {{ booking.admission_number }}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #000; background: #fff; }
+    .page { width: 210mm; min-height: 148mm; padding: 15mm; margin: 0 auto; }
+    .header { text-align: center; border-bottom: 3px double #1565c0; padding-bottom: 12px; margin-bottom: 16px; }
+    .header img { height: 60px; }
+    .header h1 { font-size: 16px; font-weight: bold; color: #1565c0; margin-top: 6px; }
+    .header h2 { font-size: 13px; color: #333; }
+    .header p  { font-size: 10px; color: #666; }
+    .card-title { background: #1565c0; color: #fff; text-align: center; padding: 6px; font-size: 13px; font-weight: bold; margin-bottom: 14px; }
+    .section { margin-bottom: 14px; }
+    .section-title { font-size: 11px; font-weight: bold; text-transform: uppercase; color: #1565c0; border-bottom: 1px solid #1565c0; padding-bottom: 3px; margin-bottom: 8px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .field { margin-bottom: 6px; }
+    .field label { font-size: 10px; color: #666; display: block; }
+    .field span  { font-size: 12px; font-weight: bold; color: #000; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th { background: #1565c0; color: #fff; padding: 6px 8px; text-align: left; }
+    td { padding: 5px 8px; border-bottom: 1px solid #eee; }
+    tr:nth-child(even) td { background: #f5f8ff; }
+    .qr-section { display: flex; align-items: center; gap: 16px; margin-top: 14px; }
+    .qr-section img { width: 80px; height: 80px; border: 1px solid #ccc; }
+    .status-badge { display: inline-block; background: #2e7d32; color: #fff; padding: 3px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+    .footer { margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px; display: flex; justify-content: space-between; font-size: 10px; color: #666; }
+    .sig-line { border-top: 1px solid #000; width: 140px; margin-top: 20px; text-align: center; font-size: 10px; padding-top: 3px; }
+    @media print { body { -webkit-print-color-adjust: exact; } }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <img src="/static/assets/THIKATTILOGO.jpg" alt="Logo">
+    <h1>THIKA TECHNICAL TRAINING INSTITUTE</h1>
+    <h2>CANDIDATE EXAMINATION CARD</h2>
+    <p>TTTI/EXAMS/CDACC/CARD — {{ generated }}</p>
+  </div>
+
+  <div class="card-title">
+    REGULAR CANDIDATE ASSESSMENT REGISTRATION — FORM 1A
+    &nbsp;&nbsp;|&nbsp;&nbsp;
+    <span class="status-badge">APPROVED</span>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Candidate Details</div>
+    <div class="grid-2">
+      <div class="field"><label>Full Name</label><span>{{ booking.full_name }}</span></div>
+      <div class="field"><label>Admission Number</label><span>{{ booking.admission_number }}</span></div>
+      <div class="field"><label>Gender</label><span>{{ booking.gender or '—' }}</span></div>
+      <div class="field"><label>Date of Birth</label><span>{{ booking.date_of_birth or '—' }}</span></div>
+      <div class="field"><label>National ID / Cert. No.</label><span>{{ booking.national_id or '—' }}</span></div>
+      <div class="field"><label>Mobile Number</label><span>{{ booking.mobile_number or '—' }}</span></div>
+      <div class="field"><label>Course</label><span>{{ booking.course_name or '—' }}</span></div>
+      <div class="field"><label>Module / Level</label><span>{{ booking.module_level or '—' }}</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Examination Details</div>
+    <div class="grid-2">
+      <div class="field"><label>Examination Series</label>
+        <span>{{ (booking.exam_series or {}).get('name', '—') }} ({{ (booking.exam_series or {}).get('year', '') }})</span></div>
+      <div class="field"><label>Assessment Center</label>
+        <span>{{ (booking.assessment_centers or {}).get('name', '—') }}</span></div>
+      <div class="field"><label>Center Location</label>
+        <span>{{ (booking.assessment_centers or {}).get('location', '—') }}</span></div>
+      <div class="field"><label>Total Exam Fee</label>
+        <span>KES {{ "%.2f"|format(booking.total_cost or 0) }}</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Units of Competency Booked</div>
+    <table>
+      <thead>
+        <tr><th>S/N</th><th>Unit of Competency</th><th>Unit Type</th><th>Unit Cost (KES)</th></tr>
+      </thead>
+      <tbody>
+        {% for u in booked_units %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{% if u.units %}{{ u.units.code }} — {% endif %}{{ u.unit_name }}</td>
+          <td>{{ u.unit_type }}</td>
+          <td>{{ "%.2f"|format(u.unit_cost or 0) }}</td>
+        </tr>
+        {% endfor %}
+        <tr>
+          <td colspan="3" style="text-align:right;font-weight:bold;">TOTAL</td>
+          <td style="font-weight:bold;">KES {{ "%.2f"|format(booking.total_cost or 0) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="qr-section">
+    {% if booking.qr_code %}
+    <img src="{{ booking.qr_code }}" alt="QR Code">
+    {% endif %}
+    <div>
+      <p style="font-size:10px;color:#666;">Scan QR code to verify this exam card</p>
+      <p style="font-size:11px;font-weight:bold;margin-top:4px;">Booking Ref: TTTTI-EXAM-{{ booking.admission_number }}-{{ booking.exam_series_id }}</p>
+      <p style="font-size:10px;color:#666;margin-top:2px;">Registrar Approved: {{ booking.registrar_approved_at | to_eat if booking.registrar_approved_at else '—' }}</p>
+    </div>
+    <div style="margin-left:auto;">
+      <div class="sig-line">Registrar's Signature</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>Note: Examination fees must be paid through KCB Bank Account No: 1263884806 — Thika Technical Training Institute</span>
+    <span>Generated: {{ generated }}</span>
+  </div>
+</div>
+<script>window.onload = function() { window.print(); }</script>
+</body>
+</html>

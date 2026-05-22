@@ -1,0 +1,88 @@
+{% extends "base_tailwind.html" %}
+{% block title %}IV Review Queue{% endblock %}
+{% block page_title %}Internal Verification Review Queue{% endblock %}
+
+{% block sidebar_nav %}
+<div class="menu-section">Internal Verification</div>
+<a href="/verification/internal/review-queue" class="sidebar-link"><i class="fas fa-inbox fa-fw"></i> Review Queue</a>
+<div class="menu-section">External Verification</div>
+<a href="/verification/external/all-reports" class="sidebar-link"><i class="fas fa-file-alt fa-fw"></i> All EV Reports</a>
+<div class="menu-section">Other</div>
+<a href="/exam/hod-review" class="sidebar-link"><i class="fas fa-clipboard-check fa-fw"></i> Exam Approvals</a>
+<a href="/results/view" class="sidebar-link"><i class="fas fa-chart-bar fa-fw"></i> Results</a>
+<a href="/clearance/admin/all" class="sidebar-link"><i class="fas fa-certificate fa-fw"></i> Clearance</a>
+<a href="/poe/admin/overview" class="sidebar-link"><i class="fas fa-folder-open fa-fw"></i> POE Overview</a>
+{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h2 class="text-xl font-bold text-gray-800">IV Review Queue</h2>
+    <p class="text-sm text-gray-500 mt-1">{{ ivs|length }} submission(s)</p>
+  </div>
+  <!-- Status filter -->
+  <div class="flex gap-2">
+    {% for s in ['pending','under_review','approved','rejected','revision_required'] %}
+    <a href="?status={{ s }}"
+       class="px-3 py-1 rounded-full text-xs font-medium transition-colors
+         {% if status_filter == s %}bg-blue-700 text-white{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
+      {{ s | replace('_',' ') | title }}
+    </a>
+    {% endfor %}
+    <a href="?" class="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200">All</a>
+  </div>
+</div>
+
+{% if not ivs %}
+<div class="card text-center py-16">
+  <i class="fas fa-check-circle text-5xl text-green-400 mb-4"></i>
+  <p class="text-gray-500 text-lg font-medium">No submissions in this queue</p>
+</div>
+{% else %}
+<div class="card overflow-hidden p-0">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-blue-700">
+          <th class="table-th">Trainer</th>
+          <th class="table-th">Unit</th>
+          <th class="table-th">Class</th>
+          <th class="table-th">Assessment Type</th>
+          <th class="table-th">Date</th>
+          <th class="table-th">Status</th>
+          <th class="table-th">Version</th>
+          <th class="table-th">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for iv in ivs %}
+        <tr class="table-tr">
+          <td class="table-td font-medium">{{ (iv.trainers or {}).get('name','—') }}</td>
+          <td class="table-td">
+            <p class="font-medium">{{ (iv.units or {}).get('code','—') }}</p>
+            <p class="text-xs text-gray-400">{{ (iv.units or {}).get('name','') }}</p>
+          </td>
+          <td class="table-td text-xs">{{ (iv.classes or {}).get('name','—') }}</td>
+          <td class="table-td">{{ iv.assessment_type }}</td>
+          <td class="table-td text-xs">{{ iv.assessment_date or '—' }}</td>
+          <td class="table-td">
+            {% if iv.status == 'approved' %}<span class="badge-approved">Approved</span>
+            {% elif iv.status == 'rejected' %}<span class="badge-rejected">Rejected</span>
+            {% elif iv.status == 'revision_required' %}<span class="badge-pending">Revision</span>
+            {% elif iv.status == 'under_review' %}<span class="badge-info">Under Review</span>
+            {% else %}<span class="badge-pending">Pending</span>{% endif %}
+          </td>
+          <td class="table-td text-center text-gray-500">v{{ iv.version or 1 }}</td>
+          <td class="table-td">
+            <a href="/verification/internal/review/{{ iv.id }}" class="btn-primary text-xs">
+              <i class="fas fa-eye mr-1"></i>Review
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

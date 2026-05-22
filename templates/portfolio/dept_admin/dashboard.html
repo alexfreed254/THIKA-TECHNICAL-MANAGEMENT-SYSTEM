@@ -1,0 +1,66 @@
+{% extends 'dept_admin/base.html' %}
+{% block title %}Portfolio — Dept Admin{% endblock %}
+{% block page_title %}Portfolio Overview{% endblock %}
+{% block page_subtitle %}Department assessment submissions{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+  <div class="flex items-center justify-between mb-5">
+    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+      <i class="fas fa-file-alt text-indigo-500"></i> Assessment Submissions
+      <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">{{ assessments | length }}</span>
+    </h3>
+    <!-- Status filter -->
+    <div class="flex gap-2">
+      {% for s, label in [('','All'),('submitted','Pending'),('approved','Approved'),('rejected','Rejected')] %}
+      <a href="{{ url_for('portfolio.portfolio_dept_admin_dashboard') }}{% if s %}?status={{ s }}{% endif %}"
+        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all
+        {% if (request.args.get('status','') == s) %}bg-indigo-600 text-white{% else %}bg-slate-100 text-slate-600 hover:bg-slate-200{% endif %}">
+        {{ label }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full">
+      <thead>
+        <tr class="bg-blue-700">
+          <th class="table-th">Trainee</th>
+          <th class="table-th">Unit</th>
+          <th class="table-th">Class</th>
+          <th class="table-th">Type</th>
+          <th class="table-th">Status</th>
+          <th class="table-th">Uploaded</th>
+          <th class="table-th">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in assessments %}
+        <tr class="table-tr">
+          <td class="table-td font-semibold text-slate-800">—</td>
+          <td class="table-td text-slate-600">{{ a.units.name if a.units else '—' }}</td>
+          <td class="table-td text-slate-600">{{ a.classes.name if a.classes else '—' }}</td>
+          <td class="table-td">
+            <span class="bg-slate-100 text-slate-700 text-xs font-bold px-2 py-0.5 rounded-md">{{ a.assessment_type }}</span>
+          </td>
+          <td class="table-td">
+            <span class="badge-{% if a.status == 'approved' %}approved{% elif a.status == 'rejected' %}rejected{% else %}pending{% endif %}">
+              {{ a.status.replace('_',' ').capitalize() }}
+            </span>
+          </td>
+          <td class="table-td text-slate-400 whitespace-nowrap">{{ a.uploaded_at[:10] if a.uploaded_at else '—' }}</td>
+          <td class="table-td">
+            <a href="{{ url_for('portfolio.portfolio_review', assessment_id=a.id) }}" class="btn-primary btn-sm">
+              <i class="fas fa-eye"></i> View
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="table-td text-center text-slate-400 py-10">No assessments found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

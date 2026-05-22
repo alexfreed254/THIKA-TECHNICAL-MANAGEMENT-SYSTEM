@@ -1,0 +1,225 @@
+{% extends "base_tailwind.html" %}
+{% block title %}Book Examination{% endblock %}
+{% block page_title %}CDACC Assessment Registration — Form 1A{% endblock %}
+
+{% block sidebar_nav %}
+<a href="/exam/my-bookings" class="sidebar-link"><i class="fas fa-list fa-fw"></i> My Bookings</a>
+<a href="/exam/book" class="sidebar-link"><i class="fas fa-plus-circle fa-fw"></i> New Booking</a>
+<a href="/student/dashboard" class="sidebar-link"><i class="fas fa-tachometer-alt fa-fw"></i> Dashboard</a>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <!-- Header -->
+  <div class="card mb-6 text-center border-t-4 border-blue-700">
+    <img src="{{ LOGO_URL }}" alt="Logo" class="w-16 h-16 rounded-full mx-auto mb-3">
+    <h2 class="text-lg font-bold text-gray-800 uppercase">Thika Technical Training Institute</h2>
+    <p class="text-sm font-semibold text-gray-600">Regular Candidate Assessment Registration Form 1A</p>
+    <p class="text-xs text-gray-400 mt-1">TTTI/EXAMS/CDACC/REG/1A</p>
+  </div>
+
+  <!-- Instructions -->
+  <div class="card mb-6 bg-blue-50 border border-blue-200">
+    <h3 class="font-semibold text-blue-800 mb-2"><i class="fas fa-info-circle mr-2"></i>Instructions</h3>
+    <ul class="text-sm text-blue-700 space-y-1 list-disc list-inside">
+      <li>Ensure you have registered on the student portal before filling this form.</li>
+      <li>Attach all required documents listed below.</li>
+      <li>Submit the completed form to the departmental HOD before the deadline.</li>
+    </ul>
+  </div>
+
+  {% if error %}
+  <div class="flash-error mb-4"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>
+  {% endif %}
+
+  <form method="POST" class="space-y-6">
+
+    <!-- Section 1: Candidate Details -->
+    <div class="card">
+      <h3 class="font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200 uppercase text-sm tracking-wide">
+        Section 1: Candidate Details
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Full Name (as per ID)</label>
+          <input type="text" class="form-input bg-gray-50" value="{{ student.full_name }}" readonly>
+        </div>
+        <div>
+          <label class="form-label">Admission Number</label>
+          <input type="text" class="form-input bg-gray-50" value="{{ student.admission_number }}" readonly>
+        </div>
+        <div>
+          <label class="form-label">Gender</label>
+          <select name="gender" class="form-input" required>
+            <option value="">-- Select --</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Date of Birth</label>
+          <input type="date" name="date_of_birth" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Mobile Number</label>
+          <input type="tel" name="mobile_number" class="form-input" placeholder="07XXXXXXXX">
+        </div>
+        <div>
+          <label class="form-label">National ID / Birth Cert. No.</label>
+          <input type="text" name="national_id" class="form-input" placeholder="ID Number">
+        </div>
+        <div>
+          <label class="form-label">Course Code</label>
+          <input type="text" name="course_code" class="form-input" placeholder="e.g. ICT/L6">
+        </div>
+        <div>
+          <label class="form-label">Course Name</label>
+          <input type="text" name="course_name" class="form-input" placeholder="e.g. Information Communication Technology">
+        </div>
+        <div>
+          <label class="form-label">Module / Level / TEP</label>
+          <input type="text" name="module_level" class="form-input" placeholder="e.g. Level 6 TVET CDACC">
+        </div>
+        <div>
+          <label class="form-label">PWD Status</label>
+          <select name="pwd_status" class="form-input">
+            <option value="None">None</option>
+            <option value="Visual Impairment">Visual Impairment</option>
+            <option value="Hearing Impairment">Hearing Impairment</option>
+            <option value="Physical Disability">Physical Disability</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Exam Series & Center -->
+    <div class="card">
+      <h3 class="font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200 uppercase text-sm tracking-wide">
+        Section 2: Examination Details
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Examination Series <span class="text-red-500">*</span></label>
+          <select name="exam_series_id" class="form-input" required>
+            <option value="">-- Select Series --</option>
+            {% for s in series_list %}
+            <option value="{{ s.id }}">{{ s.name }} ({{ s.year }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Assessment Center</label>
+          <select name="assessment_center_id" class="form-input">
+            <option value="">-- Select Center --</option>
+            {% for c in centers %}
+            <option value="{{ c.id }}">{{ c.name }}{% if c.location %} — {{ c.location }}{% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Units of Competency -->
+    <div class="card">
+      <h3 class="font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200 uppercase text-sm tracking-wide">
+        Section 3: Units of Competency
+      </h3>
+      <p class="text-xs text-gray-500 mb-4">Select the units you are booking for assessment. Maximum 8 units.</p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-blue-700">
+              <th class="table-th w-8">S/N</th>
+              <th class="table-th">Select</th>
+              <th class="table-th">Unit of Competency</th>
+              <th class="table-th w-36">Unit Type</th>
+              <th class="table-th w-28">Unit Cost (KES)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in units %}
+            <tr class="table-tr">
+              <td class="table-td text-center text-gray-400">{{ loop.index }}</td>
+              <td class="table-td text-center">
+                <input type="checkbox" name="unit_ids" value="{{ u.id }}"
+                       class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                       onchange="updateTotal()">
+              </td>
+              <td class="table-td font-medium">{{ u.code }} — {{ u.name }}</td>
+              <td class="table-td">
+                <select name="unit_type_{{ u.id }}" class="form-input text-xs py-1">
+                  <option value="Core">Core</option>
+                  <option value="Common">Common</option>
+                  <option value="Basic">Basic</option>
+                </select>
+              </td>
+              <td class="table-td">
+                <input type="number" name="unit_cost_{{ u.id }}" value="500"
+                       class="form-input text-xs py-1 w-24" min="0" step="0.01"
+                       onchange="updateTotal()">
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex justify-end">
+        <div class="bg-blue-50 border border-blue-200 rounded-lg px-6 py-3">
+          <span class="text-sm text-gray-600">Total Cost: </span>
+          <span id="totalCost" class="text-lg font-bold text-blue-700">KES 0.00</span>
+        </div>
+      </div>
+      <p class="text-xs text-gray-400 mt-3">
+        <i class="fas fa-info-circle mr-1"></i>
+        Examination fees must be paid through KCB Bank Account Number: 1263884806 — Thika Technical Training Institute
+      </p>
+    </div>
+
+    <!-- Section 4: Required Documents -->
+    <div class="card">
+      <h3 class="font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200 uppercase text-sm tracking-wide">
+        Section 4: Required Attachments
+      </h3>
+      <p class="text-xs text-gray-500 mb-4">Paste Google Drive share links or direct file URLs for each document.</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label"><i class="fas fa-id-card mr-1 text-blue-500"></i>National ID / Passport</label>
+          <input type="url" name="doc_national_id_doc" class="form-input" placeholder="https://drive.google.com/...">
+        </div>
+        <div>
+          <label class="form-label"><i class="fas fa-graduation-cap mr-1 text-blue-500"></i>KCSE Certificate</label>
+          <input type="url" name="doc_kcse_cert" class="form-input" placeholder="https://drive.google.com/...">
+        </div>
+        <div>
+          <label class="form-label"><i class="fas fa-file-alt mr-1 text-blue-500"></i>Result Slip (Previous Module)</label>
+          <input type="url" name="doc_result_slip" class="form-input" placeholder="https://drive.google.com/...">
+        </div>
+        <div>
+          <label class="form-label"><i class="fas fa-paperclip mr-1 text-blue-500"></i>Academic Supporting Documents</label>
+          <input type="url" name="doc_supporting_doc" class="form-input" placeholder="https://drive.google.com/...">
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <div class="flex gap-3 justify-end">
+      <a href="/exam/my-bookings" class="btn-ghost">Cancel</a>
+      <button type="submit" class="btn-primary">
+        <i class="fas fa-paper-plane mr-2"></i>Submit Booking for HOD Approval
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+function updateTotal() {
+  let total = 0;
+  document.querySelectorAll('input[name="unit_ids"]:checked').forEach(cb => {
+    const costInput = document.querySelector(`input[name="unit_cost_${cb.value}"]`);
+    if (costInput) total += parseFloat(costInput.value) || 0;
+  });
+  document.getElementById('totalCost').textContent = 'KES ' + total.toFixed(2);
+}
+</script>
+{% endblock %}

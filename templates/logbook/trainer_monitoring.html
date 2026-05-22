@@ -1,0 +1,146 @@
+{% extends "base_tailwind.html" %}
+{% block title %}Logbook Monitoring{% endblock %}
+{% block page_title %}Industrial Attachment Monitoring{% endblock %}
+
+{% block sidebar_nav %}
+<div class="menu-section">Logbook</div>
+<a href="/logbook/trainer/monitoring" class="sidebar-link"><i class="fas fa-chart-line fa-fw"></i> Monitoring Dashboard</a>
+<a href="/logbook/admin/placements" class="sidebar-link"><i class="fas fa-briefcase fa-fw"></i> Manage Placements</a>
+<div class="menu-section">Other</div>
+<a href="/lecturer/dashboard" class="sidebar-link"><i class="fas fa-chalkboard-teacher fa-fw"></i> Attendance</a>
+<a href="/poe/my-poe" class="sidebar-link"><i class="fas fa-folder-open fa-fw"></i> My POE</a>
+<a href="/results/enter" class="sidebar-link"><i class="fas fa-chart-bar fa-fw"></i> Enter Results</a>
+{% endblock %}
+
+{% block content %}
+<!-- Stats bar -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+  <div class="card text-center border-t-4 border-blue-500">
+    <p class="text-3xl font-bold text-blue-700">{{ placements|length }}</p>
+    <p class="text-sm text-gray-500 mt-1">Total Placements</p>
+  </div>
+  <div class="card text-center border-t-4 border-green-500">
+    <p class="text-3xl font-bold text-green-700">{{ placements | selectattr('today_count','gt',0) | list | length }}</p>
+    <p class="text-sm text-gray-500 mt-1">Active Today</p>
+  </div>
+  <div class="card text-center border-t-4 border-red-500">
+    <p class="text-3xl font-bold text-red-700">{{ placements | selectattr('is_inactive') | list | length }}</p>
+    <p class="text-sm text-gray-500 mt-1">Inactive (2+ days)</p>
+  </div>
+  <div class="card text-center border-t-4 border-yellow-500">
+    <p class="text-3xl font-bold text-yellow-700">{{ placements | sum(attribute='pending_count') }}</p>
+    <p class="text-sm text-gray-500 mt-1">Pending Approvals</p>
+  </div>
+</div>
+
+<!-- Filter -->
+<div class="card mb-4 py-3">
+  <div class="flex gap-3 flex-wrap items-center">
+    <span class="text-sm font-medium text-gray-600">Filter:</span>
+    <button onclick="filterTable('all')" id="btn-all"
+            class="px-3 py-1 rounded-full text-xs font-medium bg-blue-700 text-white">All</button>
+    <button onclick="filterTable('inactive')" id="btn-inactive"
+            class="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-red-100 hover:text-red-700">Inactive</button>
+    <button onclick="filterTable('pending')" id="btn-pending"
+            class="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-yellow-100 hover:text-yellow-700">Has Pending</button>
+    <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Search trainee..."
+           class="ml-auto form-input w-48 text-xs py-1.5">
+  </div>
+</div>
+
+<!-- Table -->
+<div class="card overflow-hidden p-0">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm" id="monitorTable">
+      <thead>
+        <tr class="bg-blue-700">
+          <th class="table-th">Trainee</th>
+          <th class="table-th">Class</th>
+          <th class="table-th">Employer</th>
+          <th class="table-th">Supervisor</th>
+          <th class="table-th text-center">Total Entries</th>
+          <th class="table-th text-center">Today</th>
+          <th class="table-th text-center">Pending</th>
+          <th class="table-th text-center">Status</th>
+          <th class="table-th">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in placements %}
+        <tr class="table-tr {% if p.is_inactive %}bg-red-50/50{% endif %}"
+            data-inactive="{{ 'true' if p.is_inactive else 'false' }}"
+            data-pending="{{ 'true' if p.pending_count > 0 else 'false' }}"
+            data-name="{{ (p.students or {}).get('full_name','') | lower }}">
+          <td class="table-td">
+            <div class="font-semibold text-gray-800">{{ (p.students or {}).get('full_name','—') }}</div>
+            <div class="text-xs text-gray-400">{{ (p.students or {}).get('admission_number','—') }}</div>
+          </td>
+          <td class="table-td text-xs">{{ ((p.students or {}).get('classes') or {}).get('name','—') }}</td>
+          <td class="table-td text-xs">{{ (p.employers or {}).get('company_name','—') }}</td>
+          <td class="table-td text-xs">{{ (p.industry_supervisors or {}).get('full_name','—') }}</td>
+          <td class="table-td text-center font-bold text-blue-700">{{ p.total_entries }}</td>
+          <td class="table-td text-center">
+            {% if p.today_count > 0 %}
+              <span class="badge-approved">{{ p.today_count }}</span>
+            {% else %}
+              <span class="text-gray-400">0</span>
+            {% endif %}
+          </td>
+          <td class="table-td text-center">
+            {% if p.pending_count > 0 %}
+              <span class="badge-pending">{{ p.pending_count }}</span>
+            {% else %}
+              <span class="text-gray-400">0</span>
+            {% endif %}
+          </td>
+          <td class="table-td text-center">
+            {% if p.is_inactive %}
+              <span class="badge-rejected">Inactive</span>
+            {% elif p.today_count > 0 %}
+              <span class="badge-approved">Active</span>
+            {% else %}
+              <span class="badge-pending">No Entry Today</span>
+            {% endif %}
+          </td>
+          <td class="table-td">
+            <a href="/logbook/trainer/view-logbook/{{ p.id }}"
+               class="btn-primary text-xs whitespace-nowrap">
+              <i class="fas fa-book mr-1"></i>View Logbook
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+let currentFilter = 'all';
+
+function filterTable(type) {
+  currentFilter = type;
+  document.querySelectorAll('[id^="btn-"]').forEach(b => {
+    b.className = 'px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600';
+  });
+  document.getElementById('btn-' + type).className =
+    'px-3 py-1 rounded-full text-xs font-medium bg-blue-700 text-white';
+  applyFilters();
+}
+
+function searchTable() { applyFilters(); }
+
+function applyFilters() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  document.querySelectorAll('#monitorTable tbody tr').forEach(row => {
+    const name     = row.dataset.name || '';
+    const inactive = row.dataset.inactive === 'true';
+    const pending  = row.dataset.pending === 'true';
+    let show = name.includes(search);
+    if (currentFilter === 'inactive' && !inactive) show = false;
+    if (currentFilter === 'pending'  && !pending)  show = false;
+    row.style.display = show ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

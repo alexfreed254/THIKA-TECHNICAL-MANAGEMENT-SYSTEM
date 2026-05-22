@@ -1,0 +1,80 @@
+{% extends "base_tailwind.html" %}
+{% block title %}POE Overview{% endblock %}
+{% block page_title %}Trainer POE Overview{% endblock %}
+
+{% block sidebar_nav %}
+<div class="menu-section">POE</div>
+<a href="/poe/admin/overview" class="sidebar-link"><i class="fas fa-chart-bar fa-fw"></i> POE Overview</a>
+<div class="menu-section">Other</div>
+<a href="/verification/internal/review-queue" class="sidebar-link"><i class="fas fa-inbox fa-fw"></i> IV Queue</a>
+<a href="/verification/external/all-reports" class="sidebar-link"><i class="fas fa-file-alt fa-fw"></i> EV Reports</a>
+<a href="/exam/hod-review" class="sidebar-link"><i class="fas fa-clipboard-check fa-fw"></i> Exam Approvals</a>
+{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h2 class="text-xl font-bold text-gray-800">Trainer Portfolio Overview</h2>
+  <div class="text-sm text-gray-500">{{ trainers|length }} trainer(s)</div>
+</div>
+
+<div class="card overflow-hidden p-0">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-blue-700">
+          <th class="table-th">#</th>
+          <th class="table-th">Trainer</th>
+          <th class="table-th">Department</th>
+          <th class="table-th text-center">Total Docs</th>
+          <th class="table-th text-center">Verified</th>
+          <th class="table-th text-center">Pending</th>
+          <th class="table-th text-center">Progress</th>
+          <th class="table-th">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in trainers %}
+        {% set pct = ((t.verified_count / t.doc_count * 100) | int) if t.doc_count > 0 else 0 %}
+        <tr class="table-tr">
+          <td class="table-td text-gray-400">{{ loop.index }}</td>
+          <td class="table-td">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold text-xs">
+                {{ t.name[0] | upper }}
+              </div>
+              <span class="font-medium">{{ t.name }}</span>
+            </div>
+          </td>
+          <td class="table-td text-xs">{{ (t.departments or {}).get('name','—') }}</td>
+          <td class="table-td text-center font-bold text-blue-700">{{ t.doc_count }}</td>
+          <td class="table-td text-center">
+            <span class="badge-approved">{{ t.verified_count }}</span>
+          </td>
+          <td class="table-td text-center">
+            {% if t.doc_count - t.verified_count > 0 %}
+            <span class="badge-pending">{{ t.doc_count - t.verified_count }}</span>
+            {% else %}
+            <span class="text-gray-400">0</span>
+            {% endif %}
+          </td>
+          <td class="table-td">
+            <div class="flex items-center gap-2">
+              <div class="flex-1 bg-gray-200 rounded-full h-2">
+                <div class="h-2 rounded-full {% if pct == 100 %}bg-green-500{% elif pct >= 50 %}bg-blue-500{% else %}bg-yellow-500{% endif %}"
+                     style="width:{{ pct }}%"></div>
+              </div>
+              <span class="text-xs font-bold text-gray-600 w-10">{{ pct }}%</span>
+            </div>
+          </td>
+          <td class="table-td">
+            <a href="/poe/review/{{ t.id }}" class="btn-primary text-xs">
+              <i class="fas fa-eye mr-1"></i>Review POE
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

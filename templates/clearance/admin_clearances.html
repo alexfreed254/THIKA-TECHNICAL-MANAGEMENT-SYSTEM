@@ -1,0 +1,198 @@
+{% extends "base_tailwind.html" %}
+{% block title %}Clearance Management{% endblock %}
+{% block page_title %}Student Clearance Management{% endblock %}
+
+{% block sidebar_nav %}
+<div class="menu-section">Clearance</div>
+<a href="/clearance/admin/all" class="sidebar-link"><i class="fas fa-list fa-fw"></i> All Clearances</a>
+<div class="menu-section">Other Modules</div>
+<a href="/exam/hod-review" class="sidebar-link"><i class="fas fa-clipboard-check fa-fw"></i> Exam Approvals</a>
+<a href="/results/view" class="sidebar-link"><i class="fas fa-chart-bar fa-fw"></i> Results</a>
+<a href="/verification/internal/review-queue" class="sidebar-link"><i class="fas fa-check-double fa-fw"></i> IV Queue</a>
+{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="card mb-4 py-3">
+  <form method="GET" class="flex gap-3 flex-wrap items-end">
+    <div>
+      <label class="form-label text-xs">Status</label>
+      <select name="status" class="form-input text-xs py-1.5">
+        <option value="">All Statuses</option>
+        {% for s in ['pending','dept_cleared','finance_cleared','registrar_cleared','completed'] %}
+        <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>
+          {{ s | replace('_',' ') | title }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="form-label text-xs">Department</label>
+      <select name="dept_id" class="form-input text-xs py-1.5">
+        <option value="">All Departments</option>
+        {% for d in depts %}
+        <option value="{{ d.id }}" {% if dept_filter == d.id %}selected{% endif %}>{{ d.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn-primary text-xs py-1.5">Filter</button>
+    <a href="/clearance/admin/all" class="btn-ghost text-xs py-1.5">Clear</a>
+  </form>
+</div>
+
+<!-- Stats -->
+<div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+  {% for s, label, color in [
+    ('pending','Pending','yellow'),
+    ('dept_cleared','Dept Cleared','blue'),
+    ('finance_cleared','Finance Cleared','purple'),
+    ('registrar_cleared','Registrar Cleared','indigo'),
+    ('completed','Completed','green')
+  ] %}
+  <div class="card text-center py-3 border-t-4 border-{{ color }}-500">
+    <p class="text-2xl font-bold text-{{ color }}-700">
+      {{ clearances | selectattr('status','eq',s) | list | length }}
+    </p>
+    <p class="text-xs text-gray-500 mt-1">{{ label }}</p>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Table -->
+<div class="card overflow-hidden p-0">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-blue-700">
+          <th class="table-th">Student</th>
+          <th class="table-th">Admission No.</th>
+          <th class="table-th">Department</th>
+          <th class="table-th">Status</th>
+          <th class="table-th">Requested</th>
+          <th class="table-th">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cr in clearances %}
+        {% set student = cr.students or {} %}
+        {% set cls = student.get('classes') or {} %}
+        {% set dept = cls.get('departments') or {} %}
+        <tr class="table-tr" id="cr_{{ cr.id }}">
+          <td class="table-td font-medium">{{ student.get('full_name','—') }}</td>
+          <td class="table-td font-mono text-blue-700">{{ student.get('admission_number','—') }}</td>
+          <td class="table-td text-xs">{{ dept.get('name','—') }}</td>
+          <td class="table-td">
+            {% if cr.status == 'completed' %}<span class="badge-approved">Completed</span>
+            {% elif cr.status == 'registrar_cleared' %}<span class="badge-info">Awaiting Principal</span>
+            {% elif cr.status == 'finance_cleared' %}<span class="badge-info">Awaiting Registrar</span>
+            {% elif cr.status == 'dept_cleared' %}<span class="badge-info">Awaiting Finance</span>
+            {% else %}<span class="badge-pending">Pending Dept</span>{% endif %}
+          </td>
+          <td class="table-td text-xs">{{ cr.created_at | to_eat }}</td>
+          <td class="table-td">
+            <div class="flex gap-1 flex-wrap">
+              <!-- Dept Clear -->
+              {% if cr.status == 'pending' and user.role in ('dept_admin','hod','super_admin') %}
+              <button onclick="openModal('dept', {{ cr.id }})" class="btn-success text-xs py-1 px-2">
+                <i class="fas fa-building mr-1"></i>Dept Clear
+              </button>
+              {% endif %}
+              <!-- Finance Clear -->
+              {% if cr.status == 'dept_cleared' and user.role in ('finance','super_admin') %}
+              <button onclick="openModal('finance', {{ cr.id }})" class="btn-primary text-xs py-1 px-2">
+                <i class="fas fa-money-bill-wave mr-1"></i>Finance Clear
+              </button>
+              {% endif %}
+              <!-- Registrar Clear -->
+              {% if cr.status == 'finance_cleared' and user.role in ('registrar','super_admin') %}
+              <button onclick="openModal('registrar', {{ cr.id }})" class="btn-primary text-xs py-1 px-2">
+                <i class="fas fa-stamp mr-1"></i>Registrar Clear
+              </button>
+              {% endif %}
+              <!-- Principal Sign -->
+              {% if cr.status == 'registrar_cleared' and user.role in ('deputy_principal','super_admin') %}
+              <button onclick="openModal('principal', {{ cr.id }})" class="btn-warning text-xs py-1 px-2">
+                <i class="fas fa-signature mr-1"></i>Sign Off
+              </button>
+              {% endif %}
+              <!-- Download -->
+              {% if cr.status == 'completed' %}
+              <a href="/clearance/download/{{ cr.id }}" target="_blank" class="btn-success text-xs py-1 px-2">
+                <i class="fas fa-download mr-1"></i>Certificate
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Action Modal -->
+<div id="actionModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center">
+  <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
+    <h3 id="modalTitle" class="font-bold text-gray-800 text-lg mb-4"></h3>
+    <form id="modalForm" method="POST">
+      <div id="extraFields"></div>
+      <div class="mb-4">
+        <label class="form-label">Comment (optional)</label>
+        <textarea name="comment" class="form-input" rows="2" placeholder="Add a comment..."></textarea>
+      </div>
+      <div class="flex gap-3 justify-end">
+        <button type="button" onclick="closeModal()" class="btn-ghost">Cancel</button>
+        <button type="submit" class="btn-success">Confirm</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const modalTitles = {
+  dept:      'Department Clearance',
+  finance:   'Finance Clearance',
+  registrar: 'Registrar Clearance',
+  principal: 'Principal Sign-off'
+};
+const modalActions = {
+  dept:      '/clearance/dept-clear/',
+  finance:   '/clearance/finance-clear/',
+  registrar: '/clearance/registrar-clear/',
+  principal: '/clearance/principal-sign/'
+};
+
+function openModal(type, crId) {
+  document.getElementById('modalTitle').textContent = modalTitles[type];
+  document.getElementById('modalForm').action = modalActions[type] + crId;
+  const extra = document.getElementById('extraFields');
+  extra.innerHTML = '';
+  if (type === 'principal') {
+    extra.innerHTML = `
+      <div class="mb-3">
+        <label class="form-label">Principal / Deputy Principal Name <span class="text-red-500">*</span></label>
+        <input type="text" name="principal_name" class="form-input" required placeholder="Full name">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Digital Signature (Type full name)</label>
+        <input type="text" name="principal_signature" class="form-input" placeholder="Type name to sign">
+      </div>
+      <div class="mb-3 flex items-center gap-2">
+        <input type="checkbox" name="stamp_applied" id="stampCheck" class="w-4 h-4">
+        <label for="stampCheck" class="text-sm text-gray-700">Official stamp applied</label>
+      </div>`;
+  }
+  document.getElementById('actionModal').classList.remove('hidden');
+  document.getElementById('actionModal').classList.add('flex');
+}
+
+function closeModal() {
+  document.getElementById('actionModal').classList.add('hidden');
+  document.getElementById('actionModal').classList.remove('flex');
+}
+
+document.getElementById('actionModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+{% endblock %}

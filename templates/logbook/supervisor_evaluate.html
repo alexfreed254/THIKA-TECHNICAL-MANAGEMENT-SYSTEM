@@ -1,0 +1,143 @@
+{% extends "base_tailwind.html" %}
+{% block title %}Evaluate Trainee{% endblock %}
+{% block page_title %}Weekly Trainee Evaluation{% endblock %}
+
+{% block sidebar_nav %}
+<a href="/logbook/supervisor/dashboard" class="sidebar-link"><i class="fas fa-tachometer-alt fa-fw"></i> Dashboard</a>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="card mb-4 bg-blue-50 border border-blue-200">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 bg-blue-700 rounded-full flex items-center justify-center text-white">
+        <i class="fas fa-user-graduate"></i>
+      </div>
+      <div>
+        <p class="font-bold text-blue-800">{{ (placement.students or {}).get('full_name','—') }}</p>
+        <p class="text-xs text-blue-600">{{ (placement.students or {}).get('admission_number','—') }}</p>
+      </div>
+    </div>
+  </div>
+
+  {% if error %}<div class="flash-error mb-4"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>{% endif %}
+
+  <div class="card mb-6">
+    <h3 class="font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200">
+      <i class="fas fa-star mr-2 text-yellow-500"></i>Weekly Evaluation Form
+    </h3>
+    <form method="POST">
+      <div class="mb-4">
+        <label class="form-label">Week Number <span class="text-red-500">*</span></label>
+        <input type="number" name="week_number" class="form-input w-32" min="1" max="52" required>
+      </div>
+
+      {% set criteria = [
+        ('punctuality', 'Punctuality', 'fas fa-clock', 'Arrives on time and ready to work'),
+        ('technical_skills', 'Technical Skills', 'fas fa-tools', 'Demonstrates required technical competencies'),
+        ('discipline', 'Discipline', 'fas fa-shield-alt', 'Follows rules and instructions'),
+        ('communication', 'Communication', 'fas fa-comments', 'Communicates effectively with team'),
+        ('safety_awareness', 'Safety Awareness', 'fas fa-hard-hat', 'Adheres to safety protocols'),
+        ('teamwork', 'Teamwork', 'fas fa-users', 'Works well with colleagues'),
+        ('initiative', 'Initiative', 'fas fa-lightbulb', 'Shows proactiveness and self-motivation')
+      ] %}
+
+      <div class="space-y-4 mb-6">
+        {% for field, label, icon, hint in criteria %}
+        <div class="p-4 bg-gray-50 rounded-xl border border-gray-200">
+          <div class="flex items-center justify-between mb-2">
+            <div>
+              <span class="font-semibold text-gray-800 text-sm">
+                <i class="{{ icon }} mr-2 text-blue-500"></i>{{ label }}
+              </span>
+              <p class="text-xs text-gray-400 mt-0.5 ml-6">{{ hint }}</p>
+            </div>
+            <span id="{{ field }}_display" class="text-2xl font-bold text-blue-700">—</span>
+          </div>
+          <div class="flex gap-2 mt-2">
+            {% for i in range(1, 6) %}
+            <label class="flex-1 cursor-pointer">
+              <input type="radio" name="{{ field }}" value="{{ i }}" class="sr-only"
+                     onchange="updateDisplay('{{ field }}', {{ i }})">
+              <div class="score-btn text-center py-2 rounded-lg border-2 border-gray-200 text-sm font-bold text-gray-400
+                          hover:border-blue-400 hover:text-blue-600 transition-all" data-field="{{ field }}" data-val="{{ i }}">
+                {{ i }}
+              </div>
+            </label>
+            {% endfor %}
+          </div>
+          <div class="flex justify-between text-xs text-gray-400 mt-1 px-1">
+            <span>Poor</span><span>Excellent</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label">Overall Comment</label>
+        <textarea name="overall_comment" class="form-input" rows="3"
+                  placeholder="General feedback about the trainee's performance this week..."></textarea>
+      </div>
+
+      <div class="mb-6">
+        <label class="form-label">Digital Signature (Type your full name)</label>
+        <input type="text" name="digital_signature" class="form-input"
+               placeholder="Type your full name as digital signature">
+        <p class="text-xs text-gray-400 mt-1">
+          <i class="fas fa-info-circle mr-1"></i>By typing your name, you digitally sign this evaluation.
+        </p>
+      </div>
+
+      <div class="flex gap-3 justify-end">
+        <a href="/logbook/supervisor/dashboard" class="btn-ghost">Cancel</a>
+        <button type="submit" class="btn-primary">
+          <i class="fas fa-paper-plane mr-2"></i>Submit Evaluation
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Previous Evaluations -->
+  {% if evaluations %}
+  <div class="card">
+    <h3 class="font-bold text-gray-800 mb-4"><i class="fas fa-history mr-2 text-blue-600"></i>Previous Evaluations</h3>
+    <div class="space-y-3">
+      {% for ev in evaluations %}
+      <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+        <div class="flex items-center justify-between mb-2">
+          <span class="font-semibold text-gray-700 text-sm">Week {{ ev.week_number }}</span>
+          <span class="text-xs text-gray-400">{{ ev.created_at | to_eat }}</span>
+        </div>
+        {% set avg = ((ev.punctuality or 0) + (ev.technical_skills or 0) + (ev.discipline or 0) +
+                      (ev.communication or 0) + (ev.safety_awareness or 0) + (ev.teamwork or 0) +
+                      (ev.initiative or 0)) / 7 %}
+        <div class="flex items-center gap-2">
+          <div class="flex-1 bg-gray-200 rounded-full h-2">
+            <div class="bg-blue-600 h-2 rounded-full" style="width: {{ (avg / 5 * 100)|int }}%"></div>
+          </div>
+          <span class="text-sm font-bold text-blue-700">{{ "%.1f"|format(avg) }}/5</span>
+        </div>
+        {% if ev.overall_comment %}
+        <p class="text-xs text-gray-500 mt-2">{{ ev.overall_comment }}</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function updateDisplay(field, val) {
+  document.getElementById(field + '_display').textContent = val + '/5';
+  document.querySelectorAll(`.score-btn[data-field="${field}"]`).forEach(btn => {
+    const v = parseInt(btn.dataset.val);
+    if (v <= val) {
+      btn.className = btn.className.replace('border-gray-200 text-gray-400', 'border-blue-600 bg-blue-600 text-white');
+    } else {
+      btn.className = btn.className.replace('border-blue-600 bg-blue-600 text-white', 'border-gray-200 text-gray-400');
+    }
+  });
+}
+</script>
+{% endblock %}

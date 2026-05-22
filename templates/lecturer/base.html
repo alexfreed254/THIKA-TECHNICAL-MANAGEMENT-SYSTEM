@@ -1,0 +1,27 @@
+{% extends "base_tailwind.html" %}
+
+{% block sidebar_nav %}
+<div class="menu-section">Attendance</div>
+<a href="/lecturer/dashboard" class="sidebar-link"><i class="fas fa-tachometer-alt"></i> Capture Attendance</a>
+<a href="/lecturer/view-attendance" class="sidebar-link"><i class="fas fa-clipboard-list"></i> View Attendance</a>
+<a href="/lecturer/class-report" class="sidebar-link"><i class="fas fa-chart-bar"></i> Class Report</a>
+<a href="/lecturer/trainee-search" class="sidebar-link"><i class="fas fa-search"></i> Trainee Search</a>
+
+<div class="menu-section">Modules</div>
+<a href="/results/enter" class="sidebar-link"><i class="fas fa-pencil-alt"></i> Enter Results</a>
+<a href="/results/view" class="sidebar-link"><i class="fas fa-table"></i> View Results</a>
+<a href="/results/upload-excel" class="sidebar-link"><i class="fas fa-file-excel"></i> Upload Results</a>
+<a href="/verification/internal/submit" class="sidebar-link"><i class="fas fa-search-plus"></i> Submit for IV</a>
+<a href="/verification/internal/my-submissions" class="sidebar-link"><i class="fas fa-list-check"></i> My IV Submissions</a>
+<a href="/poe/my-poe" class="sidebar-link"><i class="fas fa-folder-open"></i> My POE</a>
+<a href="/poe/upload" class="sidebar-link"><i class="fas fa-upload"></i> Upload POE</a>
+<a href="/logbook/trainer/monitoring" class="sidebar-link"><i class="fas fa-eye"></i> Logbook Monitor</a>
+<a href="/dual-training/monitoring" class="sidebar-link"><i class="fas fa-industry"></i> Dual Training</a>
+
+<div class="menu-section">Account</div>
+<a href="/notifications/" class="sidebar-link">
+  <i class="fas fa-bell"></i> Notifications
+  {% if unread_notifs > 0 %}<span class="notif-dot">{{ unread_notifs if unread_notifs < 10 else '9+' }}</span>{% endif %}
+</a>
+{% endblock %}
+

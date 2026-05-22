@@ -1,0 +1,166 @@
+{% extends 'student/base.html' %}
+{% block title %}Upload Assessment{% endblock %}
+{% block page_title %}Upload Assessment{% endblock %}
+{% block page_subtitle %}Submit your scanned marked assessment script{% endblock %}
+
+{% block extra_head %}
+<style>
+  .upload-zone { border:2px dashed #cbd5e1; border-radius:16px; transition:all 0.3s; background:rgba(241,245,249,0.5); cursor:pointer; }
+  .upload-zone:hover, .upload-zone.drag-over { border-color:#4f46e5; background:#eff6ff; }
+  .upload-zone.has-file { border-color:#4f46e5; background:#eef2ff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+    <div class="flex items-center gap-3 mb-8">
+      <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
+        <i class="fas fa-cloud-upload-alt text-indigo-600 text-xl"></i>
+      </div>
+      <div>
+        <h2 class="text-lg font-bold text-slate-800">Upload Assessment</h2>
+        <p class="text-xs text-slate-400">PDF, images, or video &bull; Max 100MB</p>
+      </div>
+    </div>
+
+    {% if error %}
+    <div class="flash-error mb-5"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('portfolio.portfolio_upload') }}" enctype="multipart/form-data" id="upload-form" class="space-y-6">
+
+      <!-- Unit & Class -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
+          <label class="form-label">Unit of Competency</label>
+          <select name="unit_id" required class="form-input">
+            <option value="">Select unit</option>
+            {% for u in units %}
+            <option value="{{ u.id }}">{{ u.code }} — {{ u.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Class</label>
+          <select name="class_id" required class="form-input">
+            <option value="">Select class</option>
+            {% for c in classes %}
+            <option value="{{ c.id }}">{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- Assessment details -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div>
+          <label class="form-label">Term</label>
+          <select name="term" required class="form-input">
+            <option value="">Select</option>
+            <option value="1">Term 1</option>
+            <option value="2">Term 2</option>
+            <option value="3">Term 3</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Cycle</label>
+          <select name="cycle" required class="form-input">
+            <option value="">Select</option>
+            <option value="1">Cycle 1</option>
+            <option value="2">Cycle 2</option>
+            <option value="3">Cycle 3</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Year</label>
+          <select name="year" required class="form-input">
+            {% for y in range(current_year, current_year - 3, -1) %}
+            <option value="{{ y }}" {% if y == current_year %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Assessment Type</label>
+          <select name="assessment_type" required class="form-input">
+            <option value="">Select</option>
+            <option value="PRACTICAL">Practical</option>
+            <option value="THEORY">Theory</option>
+            <option value="ORAL">Oral</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Title -->
+      <div>
+        <label class="form-label">Assessment Title</label>
+        <input type="text" name="title" required class="form-input" placeholder="e.g. Electrical Installation Practical">
+      </div>
+
+      <!-- Script file -->
+      <div>
+        <label class="form-label">Assessment Script (PDF / Image)</label>
+        <div class="upload-zone p-8 text-center" id="drop-zone"
+          onclick="document.getElementById('script').click()"
+          ondragover="event.preventDefault(); this.classList.add('drag-over')"
+          ondragleave="this.classList.remove('drag-over')"
+          ondrop="handleDrop(event)">
+          <input type="file" name="script" id="script" accept=".pdf,.jpg,.jpeg,.png" class="hidden" onchange="handleFileSelect(this)">
+          <i id="file-icon" class="fas fa-file-pdf text-5xl text-slate-300 mb-3"></i>
+          <p id="file-label" class="text-sm font-semibold text-slate-500">Click or drag &amp; drop your script here</p>
+          <p class="text-xs text-slate-400 mt-1">PDF, JPG, PNG &bull; Max 100MB</p>
+        </div>
+      </div>
+
+      <!-- Evidence files (optional) -->
+      <div>
+        <label class="form-label">Evidence Files <span class="text-slate-400 font-normal">(optional — photos, videos)</span></label>
+        <input type="file" name="evidence" multiple accept=".jpg,.jpeg,.png,.gif,.mp4,.mov,.webm,.pdf" class="form-input py-2">
+      </div>
+
+      <button type="submit" id="submit-btn" class="btn-primary w-full justify-center py-4 text-base font-extrabold rounded-2xl">
+        <i class="fas fa-paper-plane"></i> SUBMIT ASSESSMENT
+      </button>
+    </form>
+  </div>
+
+  <div class="mt-5 p-5 bg-red-50 border-2 border-red-100 rounded-2xl">
+    <div class="flex items-start gap-4">
+      <div class="bg-red-600 text-white p-2 rounded-lg flex-shrink-0"><i class="fas fa-exclamation-triangle"></i></div>
+      <p class="text-xs text-red-800 leading-relaxed">
+        Ensure you upload the <strong>correct assessment</strong>. Uploading the wrong script will result in rejection.
+      </p>
+    </div>
+  </div>
+</div>
+
+<div id="loading-overlay" class="hidden fixed inset-0 bg-indigo-950/60 backdrop-blur-md flex items-center justify-center z-50">
+  <div class="bg-white p-10 rounded-3xl shadow-2xl flex flex-col items-center">
+    <div class="animate-spin rounded-full h-16 w-16 border-4 border-indigo-100 border-t-indigo-600 mb-4"></div>
+    <p class="font-bold text-indigo-900">Uploading...</p>
+    <p class="text-xs text-slate-500 mt-2">Please do not close this window</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function handleFileSelect(input) { if (input.files[0]) updateFileUI(input.files[0]); }
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  var f = e.dataTransfer.files[0];
+  if (f) { document.getElementById('script').files = e.dataTransfer.files; updateFileUI(f); }
+}
+function updateFileUI(file) {
+  document.getElementById('drop-zone').classList.add('has-file');
+  document.getElementById('file-icon').className = 'fas fa-file-pdf text-5xl text-indigo-500 mb-3';
+  var lbl = document.getElementById('file-label');
+  lbl.innerHTML = '<span class="text-indigo-700 font-bold">✓ ' + file.name + '</span>';
+}
+document.getElementById('upload-form').addEventListener('submit', function() {
+  document.getElementById('loading-overlay').classList.remove('hidden');
+  document.getElementById('submit-btn').disabled = true;
+});
+</script>
+{% endblock %}

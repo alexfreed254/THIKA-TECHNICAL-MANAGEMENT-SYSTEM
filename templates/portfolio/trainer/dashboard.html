@@ -1,0 +1,74 @@
+{% extends 'lecturer/base.html' %}
+{% block title %}Portfolio — Trainer Dashboard{% endblock %}
+{% block page_title %}Portfolio Review{% endblock %}
+{% block page_subtitle %}Assessments assigned to your units{% endblock %}
+
+{% block content %}
+<!-- Stats -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  {% set total    = assessments | length %}
+  {% set pending  = assessments | selectattr('status','eq','submitted') | list | length %}
+  {% set approved = assessments | selectattr('status','eq','approved')  | list | length %}
+  {% set rejected = assessments | selectattr('status','eq','rejected')  | list | length %}
+  <div class="bg-white rounded-2xl p-5 border-l-4 border-slate-400 shadow-sm">
+    <p class="text-xs font-bold text-slate-400 uppercase">Total</p>
+    <p class="text-3xl font-black text-slate-800 mt-1">{{ total }}</p>
+    <i class="fas fa-file-alt text-slate-200 text-2xl mt-2"></i>
+  </div>
+  <div class="bg-white rounded-2xl p-5 border-l-4 border-amber-400 shadow-sm">
+    <p class="text-xs font-bold text-slate-400 uppercase">Pending Review</p>
+    <p class="text-3xl font-black text-amber-600 mt-1">{{ pending }}</p>
+    <i class="fas fa-clock text-amber-200 text-2xl mt-2"></i>
+  </div>
+  <div class="bg-white rounded-2xl p-5 border-l-4 border-emerald-500 shadow-sm">
+    <p class="text-xs font-bold text-slate-400 uppercase">Approved</p>
+    <p class="text-3xl font-black text-emerald-600 mt-1">{{ approved }}</p>
+    <i class="fas fa-check-circle text-emerald-200 text-2xl mt-2"></i>
+  </div>
+  <div class="bg-white rounded-2xl p-5 border-l-4 border-red-400 shadow-sm">
+    <p class="text-xs font-bold text-slate-400 uppercase">Rejected</p>
+    <p class="text-3xl font-black text-red-600 mt-1">{{ rejected }}</p>
+    <i class="fas fa-times-circle text-red-200 text-2xl mt-2"></i>
+  </div>
+</div>
+
+<!-- Pending Queue -->
+<div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+  <div class="flex items-center justify-between mb-5">
+    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+      <i class="fas fa-clock text-amber-500"></i> Pending Review Queue
+    </h3>
+  </div>
+
+  {% set pending_list = assessments | selectattr('status','eq','submitted') | list %}
+  {% if pending_list %}
+  <div class="space-y-3">
+    {% for a in pending_list %}
+    <div class="flex items-center justify-between p-4 bg-amber-50 border border-amber-100 rounded-xl">
+      <div class="flex items-center gap-3 flex-1 overflow-hidden">
+        <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+          <i class="fas fa-file-pdf text-red-500"></i>
+        </div>
+        <div class="overflow-hidden">
+          <p class="font-bold text-slate-800 text-sm truncate">{{ a.title or a.script_file_name or 'Assessment' }}</p>
+          <p class="text-xs text-slate-500">
+            {{ (a.units.name if a.units else '—') }} &bull; {{ (a.classes.name if a.classes else '—') }}
+          </p>
+          <p class="text-xs text-slate-400">{{ a.assessment_type }} &bull; {{ a.uploaded_at[:10] if a.uploaded_at else '' }}</p>
+        </div>
+      </div>
+      <a href="{{ url_for('portfolio.portfolio_review', assessment_id=a.id) }}"
+        class="flex-shrink-0 ml-3 btn-primary btn-sm">
+        <i class="fas fa-eye"></i> Review
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="py-12 text-center text-slate-400">
+    <i class="fas fa-check-circle text-4xl text-emerald-300 mb-3 block"></i>
+    <p class="font-semibold">All caught up! No pending assessments.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

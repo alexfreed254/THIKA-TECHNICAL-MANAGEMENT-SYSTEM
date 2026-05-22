@@ -1,0 +1,149 @@
+{% extends "base_tailwind.html" %}
+{% block title %}Submit Feedback{% endblock %}
+{% block page_title %}Employer Weekly Feedback{% endblock %}
+
+{% block sidebar_nav %}
+<div class="menu-section">Dual Training</div>
+<a href="/dual-training/employer-dashboard" class="sidebar-link"><i class="fas fa-tachometer-alt fa-fw"></i> Dashboard</a>
+<a href="/dual-training/employers" class="sidebar-link"><i class="fas fa-building fa-fw"></i> Employers</a>
+<a href="/dual-training/allocations" class="sidebar-link"><i class="fas fa-industry fa-fw"></i> Allocations</a>
+<a href="/dual-training/monitoring" class="sidebar-link"><i class="fas fa-chart-line fa-fw"></i> Monitoring</a>
+<div class="menu-section">Logbook</div>
+<a href="/logbook/admin/placements" class="sidebar-link"><i class="fas fa-briefcase fa-fw"></i> Placements</a>
+<a href="/logbook/trainer/monitoring" class="sidebar-link"><i class="fas fa-eye fa-fw"></i> Logbook Monitor</a>
+{% endblock %}
+
+{% block content %}
+<!-- Allocation Info Banner -->
+<div class="card mb-6 border-l-4 border-blue-600">
+  <div class="flex items-center gap-4">
+    <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+      <i class="fas fa-user-graduate text-blue-700 text-xl"></i>
+    </div>
+    <div>
+      <p class="font-bold text-gray-800 text-lg">{{ (alloc.students or {}).get('full_name','—') }}</p>
+      <p class="text-sm text-gray-500">
+        Adm: {{ (alloc.students or {}).get('admission_number','—') }} &nbsp;|&nbsp;
+        Employer: <strong>{{ (alloc.employers or {}).get('company_name','—') }}</strong>
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Feedback Form -->
+  <div class="lg:col-span-2">
+    <div class="card">
+      <h3 class="font-bold text-gray-800 mb-5 pb-3 border-b border-gray-200">
+        <i class="fas fa-star mr-2 text-yellow-500"></i>Weekly Performance Feedback
+      </h3>
+      {% if error %}<div class="flash-error mb-4"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>{% endif %}
+      <form method="POST">
+        <div class="mb-5">
+          <label class="form-label">Week Number <span class="text-red-500">*</span></label>
+          <input type="number" name="week_number" min="1" max="52" class="form-input w-32" required placeholder="e.g. 1">
+        </div>
+
+        <p class="text-sm font-semibold text-gray-700 mb-3">Rate each area (1 = Poor, 5 = Excellent)</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+          {% set criteria = [
+            ('punctuality',      'Punctuality & Time Management', 'fa-clock'),
+            ('technical_skills', 'Technical Skills',              'fa-tools'),
+            ('discipline',       'Discipline & Conduct',          'fa-shield-alt'),
+            ('communication',    'Communication Skills',          'fa-comments'),
+            ('safety_awareness', 'Safety Awareness',              'fa-hard-hat'),
+            ('teamwork',         'Teamwork & Collaboration',      'fa-users'),
+            ('initiative',       'Initiative & Problem Solving',  'fa-lightbulb'),
+          ] %}
+          {% for field, label, icon in criteria %}
+          <div class="bg-gray-50 rounded-lg p-3">
+            <label class="form-label text-xs">
+              <i class="fas {{ icon }} mr-1 text-blue-600"></i>{{ label }}
+            </label>
+            <div class="flex gap-2 mt-1">
+              {% for v in range(1,6) %}
+              <label class="flex-1 text-center cursor-pointer">
+                <input type="radio" name="{{ field }}" value="{{ v }}" class="sr-only peer" required>
+                <span class="block py-1.5 rounded border border-gray-300 text-xs font-bold
+                             peer-checked:bg-blue-700 peer-checked:text-white peer-checked:border-blue-700
+                             hover:bg-blue-50 transition-colors">{{ v }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label">Overall Comment</label>
+          <textarea name="overall_comment" rows="3" class="form-input"
+                    placeholder="General observations about the trainee's performance this week..."></textarea>
+        </div>
+
+        <div class="mb-5">
+          <label class="form-label">Digital Signature</label>
+          <input type="text" name="digital_signature" class="form-input"
+                 placeholder="Type your full name as digital signature">
+          <p class="text-xs text-gray-400 mt-1">Typing your name constitutes a digital signature.</p>
+        </div>
+
+        <button type="submit" class="btn-primary w-full">
+          <i class="fas fa-paper-plane mr-2"></i>Submit Feedback
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Previous Feedback -->
+  <div class="lg:col-span-1">
+    <div class="card overflow-hidden p-0">
+      <div class="px-4 py-3 border-b border-gray-100">
+        <h3 class="font-bold text-gray-800 text-sm">
+          <i class="fas fa-history mr-2 text-blue-600"></i>Previous Feedback ({{ feedbacks|length }})
+        </h3>
+      </div>
+      {% if not feedbacks %}
+      <div class="text-center py-10 text-gray-400">
+        <i class="fas fa-star text-3xl mb-2"></i>
+        <p class="text-sm">No feedback submitted yet.</p>
+      </div>
+      {% else %}
+      <div class="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
+        {% for f in feedbacks %}
+        <div class="p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-bold text-blue-700 text-sm">Week {{ f.week_number }}</span>
+            <span class="text-xs text-gray-400">{{ f.created_at | to_eat('%d %b %Y') }}</span>
+          </div>
+          {% set avg = ((f.punctuality or 0) + (f.technical_skills or 0) + (f.discipline or 0) +
+                        (f.communication or 0) + (f.safety_awareness or 0) + (f.teamwork or 0) +
+                        (f.initiative or 0)) / 7 %}
+          <div class="flex items-center gap-2 mb-2">
+            <div class="flex-1 bg-gray-200 rounded-full h-2">
+              <div class="bg-blue-600 h-2 rounded-full" style="width:{{ (avg/5*100)|round }}%"></div>
+            </div>
+            <span class="text-xs font-bold text-blue-700">{{ avg|round(1) }}/5</span>
+          </div>
+          <div class="grid grid-cols-2 gap-1 text-xs text-gray-600 mb-2">
+            <span>Punctuality: <strong>{{ f.punctuality or '—' }}</strong></span>
+            <span>Technical: <strong>{{ f.technical_skills or '—' }}</strong></span>
+            <span>Discipline: <strong>{{ f.discipline or '—' }}</strong></span>
+            <span>Communication: <strong>{{ f.communication or '—' }}</strong></span>
+            <span>Safety: <strong>{{ f.safety_awareness or '—' }}</strong></span>
+            <span>Teamwork: <strong>{{ f.teamwork or '—' }}</strong></span>
+            <span>Initiative: <strong>{{ f.initiative or '—' }}</strong></span>
+          </div>
+          {% if f.overall_comment %}
+          <p class="text-xs text-gray-500 italic border-t border-gray-100 pt-2">{{ f.overall_comment }}</p>
+          {% endif %}
+          {% if f.digital_signature %}
+          <p class="text-xs text-gray-400 mt-1"><i class="fas fa-signature mr-1"></i>{{ f.digital_signature }}</p>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

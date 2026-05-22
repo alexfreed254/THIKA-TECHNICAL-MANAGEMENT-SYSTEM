@@ -1,131 +1,95 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>View Attendance | TTTTI</title>
-  <link rel="stylesheet" href="/static/css/responsive.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    body { background:#f4f4f4; font-family:'Segoe UI',sans-serif; }
-    .topbar { background:linear-gradient(135deg,#1e5a9f,#2e75b6); color:#fff; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
-    .topbar a { color:#fff; text-decoration:none; padding:7px 14px; border-radius:6px; background:rgba(255,255,255,0.2); font-size:13px; font-weight:600; }
-    .topbar a:hover { background:rgba(255,255,255,0.35); }
-    .page { max-width:1000px; margin:24px auto; padding:0 16px; }
-    .card { background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.06); margin-bottom:20px; overflow:hidden; }
-    .card-header { background:#1e5a9f; color:#fff; padding:13px 20px; font-size:14px; font-weight:600; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
-    .card-body { padding:20px; }
-    .info-bar { background:#e3f2fd; border-radius:8px; padding:14px 18px; margin-bottom:20px; display:flex; flex-wrap:wrap; gap:16px; font-size:13px; }
-    .info-bar strong { color:#1e5a9f; }
-    table { width:100%; border-collapse:collapse; }
-    th { background:#f5f5f5; padding:10px 14px; text-align:left; font-size:12px; color:#555; border-bottom:2px solid #eee; }
-    td { padding:10px 14px; border-bottom:1px solid #f0f0f0; font-size:13px; vertical-align:middle; }
-    .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
-    .badge-present { background:#e8f5e9; color:#2e7d32; }
-    .badge-absent  { background:#ffebee; color:#c62828; }
-    .btn { padding:7px 14px; border:none; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; }
-    .btn-primary { background:#1e5a9f; color:#fff; }
-    .btn-success { background:#2e7d32; color:#fff; }
-    .btn-warning { background:#f57c00; color:#fff; }
-    .btn-danger  { background:#c62828; color:#fff; }
-    .btn-pdf     { background:#c62828; color:#fff; }
-    .action-row  { display:flex; gap:6px; flex-wrap:wrap; }
-    /* Confirm modal */
-    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1000; align-items:center; justify-content:center; }
-    .modal-overlay.open { display:flex; }
-    .modal-box { background:#fff; border-radius:12px; padding:28px 28px 22px; width:100%; max-width:400px; box-shadow:0 8px 32px rgba(0,0,0,0.2); }
-    .modal-box h3 { font-size:17px; margin-bottom:10px; color:#c62828; }
-    .modal-box p  { font-size:13px; color:#555; margin-bottom:20px; }
-    .modal-footer { display:flex; gap:10px; justify-content:flex-end; }
-    .delete-lesson-bar { background:#fff3e0; border:1px solid #ffcc80; border-radius:8px; padding:12px 18px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; font-size:13px; color:#e65100; }
-  </style>
-</head>
-<body>
+{% extends "lecturer/base.html" %}
+{% block title %}View Attendance{% endblock %}
+{% block page_title %}View & Edit Attendance{% endblock %}
 
-<div class="topbar">
-  <a href="/lecturer/dashboard?class_id={{ class_id }}&unit_id={{ unit_id }}&week={{ week }}&lesson={{ lesson }}&year={{ year }}&term={{ term }}">
-    <i class="fas fa-arrow-left"></i> Back to Dashboard
-  </a>
-  <span><i class="fas fa-user"></i> {{ trainer.name }}</span>
-  <a href="/auth/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
-</div>
+{% block extra_style %}
+.badge-present { background:#e8f5e9; color:#2e7d32; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
+.badge-absent  { background:#ffebee; color:#c62828; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1000; align-items:center; justify-content:center; }
+.modal-overlay.open { display:flex; }
+.modal-box { background:#fff; border-radius:12px; padding:28px; width:100%; max-width:400px; box-shadow:0 8px 32px rgba(0,0,0,0.2); }
+.modal-box h3 { font-size:17px; margin-bottom:10px; color:#c62828; }
+.modal-box p  { font-size:13px; color:#555; margin-bottom:20px; }
+.modal-footer { display:flex; gap:10px; justify-content:flex-end; }
+{% endblock %}
 
-<div class="page">
+{% block content %}
+<div class="dash-wrap">
 
-  <!-- Info bar -->
+  <!-- Back link -->
+  <div style="margin-bottom:16px;">
+    <a href="/lecturer/dashboard?class_id={{ class_id }}&unit_id={{ unit_id }}&week={{ week }}&lesson={{ lesson }}&year={{ year }}&term={{ term }}"
+       class="btn btn-sm" style="background:#e3f2fd;color:#1565c0;">
+      <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+  </div>
+
   {% if class_id and unit_id %}
-  <div class="info-bar">
-    <span><strong>Week:</strong> {{ week }}</span>
-    <span><strong>Lesson:</strong> {{ lesson }}</span>
-    <span><strong>Year:</strong> {{ year }}</span>
-    <span><strong>Term:</strong> Term {{ term }}</span>
-    <span><strong>Records:</strong> {{ records|length }}</span>
+  <!-- Info bar -->
+  <div style="background:#e3f2fd;border-radius:8px;padding:14px 18px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:16px;font-size:13px;">
+    <span><strong style="color:#1565c0;">Week:</strong> {{ week }}</span>
+    <span><strong style="color:#1565c0;">Lesson:</strong> {{ lesson }}</span>
+    <span><strong style="color:#1565c0;">Year:</strong> {{ year }}</span>
+    <span><strong style="color:#1565c0;">Term:</strong> Term {{ term }}</span>
+    <span><strong style="color:#1565c0;">Records:</strong> {{ records|length }}</span>
   </div>
   {% endif %}
 
   {% if records %}
 
-  <!-- Delete Entire Lesson Bar -->
+  <!-- Delete Lesson Warning Bar -->
   {% if class_id and unit_id and week and lesson %}
-  <div class="delete-lesson-bar">
-    <span><i class="fas fa-exclamation-triangle"></i> <strong>Wrong lesson?</strong> You can delete all attendance for this session and re-submit.</span>
-    <button class="btn btn-danger" onclick="openDeleteLesson()">
+  <div style="background:#fff3e0;border:1px solid #ffcc80;border-radius:8px;padding:12px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:13px;color:#e65100;">
+    <span><i class="fas fa-exclamation-triangle"></i> <strong>Wrong lesson?</strong> Delete all attendance for this session and re-submit.</span>
+    <button class="btn btn-danger btn-sm" onclick="openDeleteLesson()">
       <i class="fas fa-trash-alt"></i> Delete Entire Lesson
     </button>
   </div>
   {% endif %}
 
   <div class="card">
-    <div class="card-header">
-      <span><i class="fas fa-clipboard-list"></i> Attendance Records</span>
+    <div class="card-header" style="background:#1565c0;color:#fff;padding:13px 20px;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <span><i class="fas fa-clipboard-list"></i> Attendance Records ({{ records|length }})</span>
       {% if class_id and unit_id and week and lesson %}
       <a href="/lecturer/download-attendance-pdf?class_id={{ class_id }}&unit_id={{ unit_id }}&week={{ week }}&lesson={{ lesson }}&year={{ year }}&term={{ term }}"
-         target="_blank" class="btn btn-pdf" style="padding:6px 14px;font-size:12px;">
+         target="_blank" class="btn btn-danger btn-sm">
         <i class="fas fa-file-pdf"></i> Download PDF
       </a>
       {% endif %}
     </div>
-    <div style="overflow-x:auto">
+    <div style="overflow-x:auto;">
       <table>
         <thead>
           <tr>
-            <th>#</th>
-            <th>Adm No.</th>
-            <th>Student Name</th>
-            <th>Status</th>
-            <th>Date</th>
-            <th>Actions</th>
+            <th>#</th><th>Adm No.</th><th>Student Name</th>
+            <th>Status</th><th>Date</th><th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {% for r in records %}
           <tr>
-            <td style="color:#aaa">{{ loop.index }}</td>
-            <td>{{ r.students.admission_number if r.students else '—' }}</td>
-            <td><strong>{{ r.students.full_name if r.students else '—' }}</strong></td>
+            <td style="color:#aaa;">{{ loop.index }}</td>
+            <td>{{ (r.students or {}).get('admission_number','—') }}</td>
+            <td><strong>{{ (r.students or {}).get('full_name','—') }}</strong></td>
             <td>
-              <span class="badge badge-{{ r.status }}">
+              <span class="badge-{{ r.status }}">
                 {{ 'Present' if r.status == 'present' else 'Absent' }}
               </span>
             </td>
-            <td style="font-size:12px;color:#888;white-space:nowrap">
-              {{ r.attendance_date | to_eat }}
-            </td>
+            <td style="font-size:12px;color:#888;white-space:nowrap;">{{ r.attendance_date | to_eat }}</td>
             <td>
-              <div class="action-row">
-                <!-- Toggle status via AJAX -->
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
                 <button onclick="toggleStatus({{ r.id }}, '{{ r.status }}', this)"
-                        class="btn {% if r.status == 'present' %}btn-warning{% else %}btn-success{% endif %}">
+                        class="btn btn-sm {% if r.status == 'present' %}btn-warning{% else %}btn-success{% endif %}">
                   {% if r.status == 'present' %}
                     <i class="fas fa-times"></i> Mark Absent
                   {% else %}
                     <i class="fas fa-check"></i> Mark Present
                   {% endif %}
                 </button>
-                <!-- Delete single record -->
-                <button onclick="openDeleteRecord({{ r.id }}, '{{ (r.students.full_name if r.students else 'this trainee') | e }}')"
-                        class="btn btn-danger">
-                  <i class="fas fa-trash"></i> Delete
+                <button onclick="openDeleteRecord({{ r.id }}, '{{ (r.students or {}).get('full_name','this trainee') | e }}')"
+                        class="btn btn-danger btn-sm">
+                  <i class="fas fa-trash"></i>
                 </button>
               </div>
             </td>
@@ -143,7 +107,7 @@
       {% if class_id and unit_id and week and lesson %}
         No attendance records found for this session.
       {% else %}
-        Please go back and select Class, Unit, Week and Lesson.
+        Go back to the dashboard and select Class, Unit, Week and Lesson first.
       {% endif %}
     </div>
   </div>
@@ -167,14 +131,16 @@
 <div class="modal-overlay" id="deleteLessonModal">
   <div class="modal-box">
     <h3><i class="fas fa-trash-alt"></i> Delete Entire Lesson</h3>
-    <p>This will permanently delete <strong>all attendance records</strong> for this session (Week {{ week }}, {{ lesson }}, Term {{ term }}, {{ year }}). The trainer can then re-submit attendance.</p>
+    <p>This will permanently delete <strong>all attendance records</strong> for Week {{ week }}, {{ lesson }}, Term {{ term }}, {{ year }}. The trainer can then re-submit.</p>
     <div class="modal-footer">
       <button class="btn btn-primary" onclick="closeDeleteLesson()">Cancel</button>
       <button class="btn btn-danger" id="confirmDeleteLesson">Yes, Delete All</button>
     </div>
   </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
 function toggleStatus(attId, currentStatus, btn) {
   var newStatus = currentStatus === 'present' ? 'absent' : 'present';
@@ -185,71 +151,41 @@ function toggleStatus(attId, currentStatus, btn) {
   fetch('/lecturer/update-attendance', { method: 'POST', body: form })
     .then(r => r.json())
     .then(resp => {
-      if (resp.success) {
-        window.location.reload();
-      } else {
-        alert(resp.message || 'Update failed');
-        btn.disabled = false;
-      }
+      if (resp.success) { window.location.reload(); }
+      else { alert(resp.message || 'Update failed'); btn.disabled = false; }
     })
     .catch(() => { alert('Network error'); btn.disabled = false; });
 }
 
-// ── Delete single record ──────────────────────────────────────────────────────
 var _deleteRecordId = null;
-
 function openDeleteRecord(attId, studentName) {
   _deleteRecordId = attId;
   document.getElementById('deleteRecordMsg').textContent =
-    'Are you sure you want to delete the attendance record for ' + studentName + '? This cannot be undone.';
+    'Delete attendance record for ' + studentName + '? This cannot be undone.';
   document.getElementById('deleteRecordModal').classList.add('open');
 }
-
 function closeDeleteRecord() {
   _deleteRecordId = null;
   document.getElementById('deleteRecordModal').classList.remove('open');
 }
-
 document.getElementById('confirmDeleteRecord').addEventListener('click', function() {
   if (!_deleteRecordId) return;
-  var btn = this;
-  btn.disabled = true;
-  btn.textContent = 'Deleting…';
+  var btn = this; btn.disabled = true; btn.textContent = 'Deleting…';
   var form = new FormData();
   form.append('att_id', _deleteRecordId);
   fetch('/lecturer/delete-single-attendance', { method: 'POST', body: form })
     .then(r => r.json())
     .then(resp => {
-      if (resp.success) {
-        window.location.reload();
-      } else {
-        alert(resp.message || 'Delete failed');
-        btn.disabled = false;
-        btn.textContent = 'Yes, Delete';
-        closeDeleteRecord();
-      }
+      if (resp.success) { window.location.reload(); }
+      else { alert(resp.message || 'Delete failed'); btn.disabled = false; btn.textContent = 'Yes, Delete'; closeDeleteRecord(); }
     })
-    .catch(() => {
-      alert('Network error');
-      btn.disabled = false;
-      btn.textContent = 'Yes, Delete';
-      closeDeleteRecord();
-    });
+    .catch(() => { alert('Network error'); btn.disabled = false; btn.textContent = 'Yes, Delete'; closeDeleteRecord(); });
 });
 
-// ── Delete entire lesson ──────────────────────────────────────────────────────
-function openDeleteLesson() {
-  document.getElementById('deleteLessonModal').classList.add('open');
-}
-
-function closeDeleteLesson() {
-  document.getElementById('deleteLessonModal').classList.remove('open');
-}
-
+function openDeleteLesson()  { document.getElementById('deleteLessonModal').classList.add('open'); }
+function closeDeleteLesson() { document.getElementById('deleteLessonModal').classList.remove('open'); }
 document.getElementById('confirmDeleteLesson').addEventListener('click', function() {
-  var btn = this;
-  btn.disabled = true;
-  btn.textContent = 'Deleting…';
+  var btn = this; btn.disabled = true; btn.textContent = 'Deleting…';
   var form = new FormData();
   form.append('unit_id', '{{ unit_id }}');
   form.append('week',    '{{ week }}');
@@ -261,29 +197,11 @@ document.getElementById('confirmDeleteLesson').addEventListener('click', functio
     .then(resp => {
       if (resp.success) {
         window.location.href = '/lecturer/dashboard?class_id={{ class_id }}&unit_id={{ unit_id }}&week={{ week }}&lesson={{ lesson }}&year={{ year }}&term={{ term }}';
-      } else {
-        alert(resp.message || 'Delete failed');
-        btn.disabled = false;
-        btn.textContent = 'Yes, Delete All';
-        closeDeleteLesson();
-      }
+      } else { alert(resp.message || 'Delete failed'); btn.disabled = false; btn.textContent = 'Yes, Delete All'; closeDeleteLesson(); }
     })
-    .catch(() => {
-      alert('Network error');
-      btn.disabled = false;
-      btn.textContent = 'Yes, Delete All';
-      closeDeleteLesson();
-    });
+    .catch(() => { alert('Network error'); btn.disabled = false; btn.textContent = 'Yes, Delete All'; closeDeleteLesson(); });
 });
-
-// Close modals on overlay click
-document.getElementById('deleteRecordModal').addEventListener('click', function(e) {
-  if (e.target === this) closeDeleteRecord();
-});
-document.getElementById('deleteLessonModal').addEventListener('click', function(e) {
-  if (e.target === this) closeDeleteLesson();
-});
+document.getElementById('deleteRecordModal').addEventListener('click', function(e) { if (e.target === this) closeDeleteRecord(); });
+document.getElementById('deleteLessonModal').addEventListener('click', function(e) { if (e.target === this) closeDeleteLesson(); });
 </script>
-</body>
-</html>
-
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends "base_tailwind.html" %}
+{% block title %}My Portfolio of Evidence{% endblock %}
+{% block page_title %}Portfolio of Evidence (POE){% endblock %}
+
+{% block sidebar_nav %}
+<div class="menu-section">POE</div>
+<a href="/poe/my-poe" class="sidebar-link"><i class="fas fa-folder-open fa-fw"></i> My Portfolio</a>
+<a href="/poe/upload" class="sidebar-link"><i class="fas fa-upload fa-fw"></i> Upload Document</a>
+<div class="menu-section">Other</div>
+<a href="/lecturer/dashboard" class="sidebar-link"><i class="fas fa-chalkboard-teacher fa-fw"></i> Attendance</a>
+<a href="/results/enter" class="sidebar-link"><i class="fas fa-chart-bar fa-fw"></i> Enter Results</a>
+<a href="/verification/internal/submit" class="sidebar-link"><i class="fas fa-clipboard-check fa-fw"></i> IV Submit</a>
+<a href="/logbook/trainer/monitoring" class="sidebar-link"><i class="fas fa-chart-line fa-fw"></i> Logbook Monitor</a>
+{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h2 class="text-xl font-bold text-gray-800">My Portfolio of Evidence</h2>
+    {% if trainer %}
+    <p class="text-sm text-gray-500 mt-1">
+      {{ trainer.name }} — {{ (trainer.departments or {}).get('name','—') }}
+    </p>
+    {% endif %}
+  </div>
+  <a href="/poe/upload" class="btn-primary">
+    <i class="fas fa-upload mr-2"></i>Upload Document
+  </a>
+</div>
+
+<!-- Stats -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+  <div class="card text-center border-t-4 border-blue-500">
+    <p class="text-3xl font-bold text-blue-700">{{ docs|length }}</p>
+    <p class="text-sm text-gray-500 mt-1">Total Documents</p>
+  </div>
+  <div class="card text-center border-t-4 border-green-500">
+    <p class="text-3xl font-bold text-green-700">{{ docs | selectattr('is_verified') | list | length }}</p>
+    <p class="text-sm text-gray-500 mt-1">Verified</p>
+  </div>
+  <div class="card text-center border-t-4 border-yellow-500">
+    <p class="text-3xl font-bold text-yellow-700">{{ docs | rejectattr('is_verified') | list | length }}</p>
+    <p class="text-sm text-gray-500 mt-1">Pending Verification</p>
+  </div>
+  <div class="card text-center border-t-4 border-purple-500">
+    <p class="text-3xl font-bold text-purple-700">{{ grouped|length }}</p>
+    <p class="text-sm text-gray-500 mt-1">Categories</p>
+  </div>
+</div>
+
+{% if not docs %}
+<div class="card text-center py-16">
+  <i class="fas fa-folder-open text-5xl text-gray-300 mb-4"></i>
+  <p class="text-gray-500 text-lg font-medium">No documents uploaded yet</p>
+  <p class="text-gray-400 text-sm mt-1">Start building your portfolio by uploading professional documents.</p>
+  <a href="/poe/upload" class="btn-primary mt-4 inline-block">Upload First Document</a>
+</div>
+{% else %}
+{% for category, cat_docs in grouped.items() %}
+<div class="card mb-4">
+  <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+    <h3 class="font-bold text-gray-800">
+      <i class="fas fa-folder mr-2 text-blue-500"></i>{{ category }}
+    </h3>
+    <span class="badge-info">{{ cat_docs|length }} file(s)</span>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+    {% for doc in cat_docs %}
+    <div class="flex items-start gap-3 p-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+      <!-- File icon -->
+      <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0
+        {% if doc.file_type == 'photo' %}bg-blue-100
+        {% elif doc.file_type == 'video' %}bg-purple-100
+        {% elif doc.file_type == 'pdf' %}bg-red-100
+        {% else %}bg-gray-100{% endif %}">
+        <i class="fas
+          {% if doc.file_type == 'photo' %}fa-image text-blue-600
+          {% elif doc.file_type == 'video' %}fa-video text-purple-600
+          {% elif doc.file_type == 'pdf' %}fa-file-pdf text-red-600
+          {% else %}fa-file text-gray-600{% endif %}"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-semibold text-gray-800 text-sm truncate">{{ doc.doc_title }}</p>
+        {% if doc.description %}
+        <p class="text-xs text-gray-500 mt-0.5 line-clamp-1">{{ doc.description }}</p>
+        {% endif %}
+        <div class="flex items-center gap-2 mt-1">
+          <span class="text-xs text-gray-400">{{ doc.created_at | to_eat('%d %b %Y') }}</span>
+          {% if doc.is_verified %}
+          <span class="badge-approved text-xs">Verified</span>
+          {% else %}
+          <span class="badge-pending text-xs">Unverified</span>
+          {% endif %}
+          {% if doc.google_drive_id %}
+          <span class="text-xs text-blue-500"><i class="fab fa-google-drive mr-0.5"></i>Drive</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="flex flex-col gap-1">
+        <a href="{{ doc.file_url }}" target="_blank"
+           class="text-blue-600 hover:text-blue-800 text-xs px-2 py-1 rounded border border-blue-200 hover:bg-blue-50">
+          <i class="fas fa-eye"></i>
+        </a>
+        <form method="POST" action="/poe/delete/{{ doc.id }}"
+              onsubmit="return confirm('Delete this document?')">
+          <button type="submit" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 rounded border border-red-200 hover:bg-red-50 w-full">
+            <i class="fas fa-trash"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

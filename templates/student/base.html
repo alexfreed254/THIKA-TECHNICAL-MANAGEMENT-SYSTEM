@@ -1,0 +1,25 @@
+{% extends "base_tailwind.html" %}
+
+{% block sidebar_nav %}
+<div class="menu-section">My Portal</div>
+<a href="/student/dashboard" class="sidebar-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+
+<div class="menu-section">Attendance</div>
+<a href="/student/dashboard" class="sidebar-link"><i class="fas fa-clipboard-list"></i> Attendance</a>
+
+<div class="menu-section">Modules</div>
+<a href="/results/my-results" class="sidebar-link"><i class="fas fa-chart-bar"></i> My Results</a>
+<a href="/exam/my-bookings" class="sidebar-link"><i class="fas fa-book-open"></i> Exam Bookings</a>
+<a href="/exam/book" class="sidebar-link"><i class="fas fa-plus-circle"></i> Book Exam</a>
+<a href="/clearance/my-clearance" class="sidebar-link"><i class="fas fa-certificate"></i> My Clearance</a>
+<a href="/logbook/dashboard" class="sidebar-link"><i class="fas fa-book"></i> Logbook</a>
+<a href="/logbook/my-logbook" class="sidebar-link"><i class="fas fa-list"></i> My Logbook</a>
+<a href="/logbook/submit" class="sidebar-link"><i class="fas fa-pen"></i> Submit Entry</a>
+
+<div class="menu-section">Account</div>
+<a href="/notifications/" class="sidebar-link">
+  <i class="fas fa-bell"></i> Notifications
+  {% if unread_notifs > 0 %}<span class="notif-dot">{{ unread_notifs if unread_notifs < 10 else '9+' }}</span>{% endif %}
+</a>
+{% endblock %}
+

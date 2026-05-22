@@ -1,0 +1,12 @@
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}
+    <div class="mb-3 p-4 rounded-xl text-sm font-semibold flex items-center gap-3
+      {% if category == 'success' %}bg-emerald-50 text-emerald-800 border border-emerald-200
+      {% elif category == 'error' or category == 'danger' %}bg-red-50 text-red-800 border border-red-200
+      {% elif category == 'warning' %}bg-amber-50 text-amber-800 border border-amber-200
+      {% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+      <i class="fas {% if category == 'success' %}fa-check-circle{% elif category in ('error','danger') %}fa-exclamation-circle{% elif category == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %} flex-shrink-0"></i>
+      <span>{{ message }}</span>
+    </div>
+  {% endfor %}
+{% endwith %}

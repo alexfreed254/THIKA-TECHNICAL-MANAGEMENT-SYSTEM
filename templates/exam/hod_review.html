@@ -1,0 +1,97 @@
+{% extends "base_tailwind.html" %}
+{% block title %}HOD — Exam Booking Review{% endblock %}
+{% block page_title %}Exam Booking Approvals{% endblock %}
+
+{% block sidebar_nav %}
+<div class="menu-section">Examination</div>
+<a href="/exam/hod-review" class="sidebar-link"><i class="fas fa-clipboard-check fa-fw"></i> HOD Review Queue</a>
+<a href="/exam/admin/all-bookings" class="sidebar-link"><i class="fas fa-list fa-fw"></i> All Bookings</a>
+<a href="/exam/admin/series" class="sidebar-link"><i class="fas fa-calendar fa-fw"></i> Exam Series</a>
+<a href="/exam/admin/centers" class="sidebar-link"><i class="fas fa-building fa-fw"></i> Assessment Centers</a>
+<div class="menu-section">Other Modules</div>
+<a href="/verification/internal/review-queue" class="sidebar-link"><i class="fas fa-check-double fa-fw"></i> Internal Verification</a>
+<a href="/results/view" class="sidebar-link"><i class="fas fa-chart-bar fa-fw"></i> Results</a>
+<a href="/clearance/admin/all" class="sidebar-link"><i class="fas fa-certificate fa-fw"></i> Clearance</a>
+<a href="/poe/admin/overview" class="sidebar-link"><i class="fas fa-folder-open fa-fw"></i> POE Overview</a>
+{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h2 class="text-xl font-bold text-gray-800">Pending HOD Approvals</h2>
+    <p class="text-sm text-gray-500 mt-1">{{ bookings|length }} booking(s) awaiting your review</p>
+  </div>
+  <a href="/exam/admin/all-bookings" class="btn-ghost text-sm">
+    <i class="fas fa-list mr-2"></i>All Bookings
+  </a>
+</div>
+
+{% if not bookings %}
+<div class="card text-center py-16">
+  <i class="fas fa-check-circle text-5xl text-green-400 mb-4"></i>
+  <p class="text-gray-500 text-lg font-medium">No pending approvals</p>
+  <p class="text-gray-400 text-sm mt-1">All exam bookings have been reviewed.</p>
+</div>
+{% else %}
+<div class="space-y-4">
+  {% for b in bookings %}
+  <div class="card hover:shadow-md transition-shadow">
+    <div class="flex items-start justify-between flex-wrap gap-4">
+      <div class="flex-1">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-user-graduate text-blue-700"></i>
+          </div>
+          <div>
+            <p class="font-bold text-gray-800">{{ (b.students or {}).get('full_name', b.full_name) }}</p>
+            <p class="text-xs text-gray-500">{{ (b.students or {}).get('admission_number', b.admission_number) }}</p>
+          </div>
+          <span class="badge-pending">Awaiting HOD</span>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+          <div><span class="text-gray-500 text-xs">Series</span><p class="font-medium">{{ (b.exam_series or {}).get('name', '—') }}</p></div>
+          <div><span class="text-gray-500 text-xs">Center</span><p class="font-medium">{{ (b.assessment_centers or {}).get('name', '—') }}</p></div>
+          <div><span class="text-gray-500 text-xs">Course</span><p class="font-medium">{{ b.course_name or '—' }}</p></div>
+          <div><span class="text-gray-500 text-xs">Total Fee</span><p class="font-bold text-blue-700">KES {{ "%.2f"|format(b.total_cost or 0) }}</p></div>
+        </div>
+        <p class="text-xs text-gray-400 mt-2">Submitted: {{ b.created_at | to_eat }}</p>
+      </div>
+      <div class="flex gap-2">
+        <a href="/exam/booking/{{ b.id }}" class="btn-ghost text-xs">
+          <i class="fas fa-eye mr-1"></i>View
+        </a>
+      </div>
+    </div>
+
+    <!-- Approval form -->
+    <div class="mt-4 pt-4 border-t border-gray-100">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form method="POST" action="/exam/hod-action/{{ b.id }}" class="flex gap-2 items-end">
+          <div class="flex-1">
+            <label class="form-label text-xs">Comment (optional)</label>
+            <input type="text" name="comment" class="form-input text-xs" placeholder="Add a comment...">
+          </div>
+          <input type="hidden" name="action" value="approve">
+          <button type="submit" class="btn-success text-xs whitespace-nowrap"
+                  onclick="return confirm('Approve this booking?')">
+            <i class="fas fa-check mr-1"></i>Approve
+          </button>
+        </form>
+        <form method="POST" action="/exam/hod-action/{{ b.id }}" class="flex gap-2 items-end">
+          <div class="flex-1">
+            <label class="form-label text-xs">Rejection Reason <span class="text-red-500">*</span></label>
+            <input type="text" name="comment" class="form-input text-xs" placeholder="Reason for rejection..." required>
+          </div>
+          <input type="hidden" name="action" value="reject">
+          <button type="submit" class="btn-danger text-xs whitespace-nowrap"
+                  onclick="return confirm('Reject this booking?')">
+            <i class="fas fa-times mr-1"></i>Reject
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

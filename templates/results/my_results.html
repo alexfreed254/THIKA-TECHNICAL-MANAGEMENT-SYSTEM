@@ -1,0 +1,85 @@
+{% extends "base_tailwind.html" %}
+{% block title %}My Results{% endblock %}
+{% block page_title %}My Academic Results{% endblock %}
+
+{% block sidebar_nav %}
+<div class="menu-section">My Account</div>
+<a href="/student/dashboard" class="sidebar-link"><i class="fas fa-tachometer-alt fa-fw"></i> Dashboard</a>
+<a href="/results/my-results" class="sidebar-link"><i class="fas fa-chart-bar fa-fw"></i> My Results</a>
+<a href="/exam/my-bookings" class="sidebar-link"><i class="fas fa-file-alt fa-fw"></i> Exam Bookings</a>
+<a href="/logbook/dashboard" class="sidebar-link"><i class="fas fa-book-open fa-fw"></i> Logbook</a>
+<a href="/clearance/my-clearance" class="sidebar-link"><i class="fas fa-certificate fa-fw"></i> Clearance</a>
+{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h2 class="text-xl font-bold text-gray-800">Academic Results</h2>
+    <p class="text-sm text-gray-500 mt-1">{{ student.full_name }} — {{ student.admission_number }}</p>
+  </div>
+</div>
+
+{% if not grouped %}
+<div class="card text-center py-16">
+  <i class="fas fa-chart-bar text-5xl text-gray-300 mb-4"></i>
+  <p class="text-gray-500 text-lg font-medium">No results available yet</p>
+  <p class="text-gray-400 text-sm mt-1">Results will appear here once uploaded by your trainer.</p>
+</div>
+{% else %}
+{% for period, results in grouped.items() %}
+<div class="card mb-6">
+  <div class="flex items-center justify-between mb-4 pb-2 border-b border-gray-200">
+    <h3 class="font-bold text-gray-800"><i class="fas fa-calendar-alt mr-2 text-blue-500"></i>{{ period }}</h3>
+    {% set passed = results | selectattr('grade','in',['A','B','C']) | list | length %}
+    <div class="flex gap-2">
+      <span class="badge-approved">{{ passed }} Passed</span>
+      <span class="badge-rejected">{{ results|length - passed }} Failed/Supp</span>
+    </div>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-blue-700">
+          <th class="table-th">Unit Code</th>
+          <th class="table-th">Unit Name</th>
+          <th class="table-th text-center">CAT</th>
+          <th class="table-th text-center">Exam</th>
+          <th class="table-th text-center">Practical</th>
+          <th class="table-th text-center">Total</th>
+          <th class="table-th text-center">Grade</th>
+          <th class="table-th text-center">Remarks</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in results %}
+        <tr class="table-tr">
+          <td class="table-td font-mono font-bold text-blue-700">{{ (r.units or {}).get('code','—') }}</td>
+          <td class="table-td">{{ (r.units or {}).get('name','—') }}</td>
+          <td class="table-td text-center">{{ r.cat_score if r.cat_score is not none else '—' }}</td>
+          <td class="table-td text-center">{{ r.exam_score if r.exam_score is not none else '—' }}</td>
+          <td class="table-td text-center">{{ r.practical_score if r.practical_score is not none else '—' }}</td>
+          <td class="table-td text-center font-bold">{{ r.total_score if r.total_score is not none else '—' }}</td>
+          <td class="table-td text-center">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm
+              {% if r.grade == 'A' %}bg-green-100 text-green-800
+              {% elif r.grade == 'B' %}bg-blue-100 text-blue-800
+              {% elif r.grade == 'C' %}bg-yellow-100 text-yellow-800
+              {% elif r.grade == 'D' %}bg-orange-100 text-orange-800
+              {% else %}bg-red-100 text-red-800{% endif %}">
+              {{ r.grade or '—' }}
+            </span>
+          </td>
+          <td class="table-td text-center text-xs">
+            <span class="{% if r.remarks in ('Distinction','Credit','Pass') %}text-green-700{% else %}text-red-700{% endif %} font-medium">
+              {{ r.remarks or '—' }}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

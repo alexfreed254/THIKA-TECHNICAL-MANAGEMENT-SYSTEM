@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Admin Login | TTTTI</title>
+  <title>Login | THIKA TECHNICAL MANAGEMENT SYSTEM</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
@@ -71,6 +71,50 @@
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+
+    .message-box {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #bae6fd;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 18px;
+      font-size: 0.88rem;
+    }
+
+    .tab-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 22px;
+    }
+
+    .tab-button {
+      flex: 1;
+      padding: 12px 0;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.8);
+      text-transform: uppercase;
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .tab-button.active {
+      background: #e53935;
+      color: #fff;
+      border-color: #e53935;
+    }
+
+    .info-text {
+      color: rgba(255,255,255,0.65);
+      font-size: 13px;
+      margin: 16px 0 20px;
+      line-height: 1.6;
+      text-align: center;
     }
 
     /* ── Inputs ── */
@@ -178,10 +222,16 @@
 <div class="card">
 
   <div class="logo-wrap">
-    <img src="{{ LOGO_URL }}" alt="TTTTI Logo">
-    <h1>Thika Technical Training Institute</h1>
-    <p>Admin Login</p>
+    <img src="{{ LOGO_URL }}" alt="TMS Logo">
+    <h1>THIKA TECHNICAL MANAGEMENT SYSTEM</h1>
+    <p>Access for trainees and staff in one unified login page.</p>
   </div>
+
+  {% if registered %}
+  <div class="message-box">
+    Registration completed. Please log in with your admission number and password.
+  </div>
+  {% endif %}
 
   {% if error %}
   <div class="error-box">
@@ -189,35 +239,97 @@
   </div>
   {% endif %}
 
-  <form method="post" action="/auth/login">
+  <div class="info-text">
+    Trainees sign in with Admission Number and Password. Other users sign in with Email Address and Password.
+  </div>
 
-    <div class="input-wrap">
-      <i class="fas fa-envelope"></i>
-      <input type="email" name="email"
-             placeholder="Email Address"
-             value="{{ request.form.get('email', '') }}"
-             required autocomplete="email">
-    </div>
+  <div class="tab-row">
+    <button type="button" id="staff-tab" class="tab-button{% if active_tab != 'trainee' %} active{% endif %}" onclick="switchTab('staff')">Staff Login</button>
+    <button type="button" id="trainee-tab" class="tab-button{% if active_tab == 'trainee' %} active{% endif %}" onclick="switchTab('trainee')">Trainee Login</button>
+  </div>
 
-    <div class="input-wrap">
-      <i class="fas fa-lock"></i>
-      <input type="password" name="password"
-             placeholder="Password"
-             required autocomplete="current-password">
-    </div>
+  <div id="staff-form" style="display: {% if active_tab == 'trainee' %}none{% else %}block{% endif %};">
+    <form method="post" action="/auth/login">
+      <input type="hidden" name="login_type" value="staff">
 
-    <div class="meta-row">
-      <label>
-        <input type="checkbox" name="remember"> Remember me
-      </label>
-    </div>
+      <div class="input-wrap">
+        <i class="fas fa-envelope"></i>
+        <input type="email" name="email"
+               placeholder="Email Address"
+               value="{{ request.form.get('email', '') }}"
+               required autocomplete="email">
+      </div>
 
-    <button type="submit" class="btn-login">Login</button>
-  </form>
+      <div class="input-wrap">
+        <i class="fas fa-lock"></i>
+        <input type="password" name="password"
+               placeholder="Password"
+               required autocomplete="current-password">
+      </div>
+
+      <div class="meta-row">
+        <label>
+          <input type="checkbox" name="remember"> Remember me
+        </label>
+      </div>
+
+      <button type="submit" class="btn-login">Login</button>
+    </form>
+  </div>
+
+  <div id="trainee-form" style="display: {% if active_tab == 'trainee' %}block{% else %}none{% endif %};">
+    <form method="post" action="/auth/login">
+      <input type="hidden" name="login_type" value="trainee">
+
+      <div class="input-wrap">
+        <i class="fas fa-id-card"></i>
+        <input type="text" name="admission_number"
+               placeholder="Admission Number"
+               value="{{ request.form.get('admission_number', '') }}"
+               maxlength="10" required autocomplete="off">
+      </div>
+
+      <div class="input-wrap">
+        <i class="fas fa-lock"></i>
+        <input type="password" name="password"
+               placeholder="Password"
+               required autocomplete="current-password">
+      </div>
+
+      <div class="meta-row">
+        <label>
+          <input type="checkbox" name="remember"> Remember me
+        </label>
+      </div>
+
+      <button type="submit" class="btn-login">Login</button>
+    </form>
+  </div>
 
   <div class="footer-links">
     <a href="/"><i class="fas fa-arrow-left"></i> Back to Home</a>
   </div>
+
+  <script>
+    function switchTab(tab) {
+      var staffForm = document.getElementById('staff-form');
+      var traineeForm = document.getElementById('trainee-form');
+      var staffTab = document.getElementById('staff-tab');
+      var traineeTab = document.getElementById('trainee-tab');
+
+      if (tab === 'trainee') {
+        staffForm.style.display = 'none';
+        traineeForm.style.display = 'block';
+        staffTab.classList.remove('active');
+        traineeTab.classList.add('active');
+      } else {
+        staffForm.style.display = 'block';
+        traineeForm.style.display = 'none';
+        staffTab.classList.add('active');
+        traineeTab.classList.remove('active');
+      }
+    }
+  </script>
 
 </div>
 

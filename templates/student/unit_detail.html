@@ -1,96 +1,92 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Unit Attendance Detail | TTTTI</title>
-  <link rel="stylesheet" href="/static/css/responsive.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    .navbar { background:linear-gradient(135deg,#1e5a9f,#2e75b6); color:#fff; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
-    .navbar a { color:#fff; text-decoration:none; padding:7px 14px; border-radius:6px; background:rgba(255,255,255,0.2); font-size:13px; font-weight:600; }
-    .navbar a:hover { background:rgba(255,255,255,0.35); }
-    .page { max-width:900px; margin:24px auto; padding:0 16px; }
-    .stat-row { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:20px; }
-    .stat-pill { flex:1; min-width:100px; text-align:center; padding:14px 10px; border-radius:10px; }
-    .stat-pill .num { font-size:28px; font-weight:800; line-height:1; }
-    .stat-pill .lbl { font-size:12px; margin-top:4px; font-weight:600; }
-    .box-present { background:#e8f5e9; color:#2e7d32; }
-    .box-absent  { background:#ffebee; color:#c62828; }
-    .box-total   { background:#e3f2fd; color:#1e5a9f; }
-    .box-pct     { background:#fff3e0; color:#e65100; }
-    .progress-bar { height:12px; background:#eee; border-radius:6px; overflow:hidden; margin-bottom:20px; }
-    .progress-fill { height:100%; border-radius:6px; transition:width 0.8s ease; }
-    .status-present { color:#28a745; font-weight:700; }
-    .status-absent  { color:#dc3545; font-weight:700; }
-  </style>
-</head>
-<body>
-<nav class="navbar">
-  <a href="/student/dashboard">← Back to Dashboard</a>
-  <span>{{ student.full_name }}</span>
-  <a href="/auth/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
-</nav>
+{% extends "base_tailwind.html" %}
 
-<div class="page">
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:20px;">
+{% block title %}Unit Attendance Detail | TTTTI{% endblock %}
+
+{% block content %}
+<div class="main-content">
+  <div class="page-header flex justify-between items-center">
     <div>
-      <h1 style="color:#1e5a9f;font-size:20px;margin-bottom:4px;">
-        <i class="fas fa-book"></i> {{ unit.code }} — {{ unit.name }}
-      </h1>
-      <p style="color:#888;font-size:13px;">
-        {{ info.class_name if info else '' }} &bull; {{ info.dept_name if info else '' }}
-      </p>
+      <h1><i class="fas fa-book"></i> {{ unit.code }} — {{ unit.name }}</h1>
+      <p class="text-sm text-gray-600">{{ info.class_name if info else '' }} • {{ info.dept_name if info else '' }}</p>
     </div>
     <a href="/student/unit-report-pdf?unit_id={{ unit.id }}" target="_blank"
-       class="btn btn-success"><i class="fas fa-file-pdf"></i> Download PDF Report</a>
+       class="btn btn-sm bg-green-600 hover:bg-green-700 text-white">
+      <i class="fas fa-file-pdf"></i> Download PDF
+    </a>
   </div>
 
-  <!-- Summary stats -->
-  <div class="stat-row">
-    <div class="stat-pill box-present"><div class="num">{{ present }}</div><div class="lbl">Present</div></div>
-    <div class="stat-pill box-absent"><div class="num">{{ absent }}</div><div class="lbl">Absent</div></div>
-    <div class="stat-pill box-total"><div class="num">{{ total }}</div><div class="lbl">Total</div></div>
-    <div class="stat-pill box-pct"><div class="num">{{ pct }}%</div><div class="lbl">Attendance</div></div>
-  </div>
+  <div class="page-body">
 
-  <div class="progress-bar">
-    <div class="progress-fill" style="width:{{ pct }}%;background:{% if pct >= 75 %}#27ae60{% elif pct >= 50 %}#f39c12{% else %}#e74c3c{% endif %};"></div>
-  </div>
-
-  <!-- Records table -->
-  <div class="card">
-    <div class="card-header"><i class="fas fa-clipboard-list"></i> Attendance Records</div>
-    {% if records %}
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr><th>#</th><th>Week</th><th>Lesson</th><th>Status</th><th>Date &amp; Time</th></tr>
-        </thead>
-        <tbody>
-          {% for r in records %}
-          <tr>
-            <td>{{ loop.index }}</td>
-            <td>Week {{ r.week }}</td>
-            <td>{{ r.lesson }}</td>
-            <td class="status-{{ r.status | lower }}">
-              {% if r.status == 'present' %}✓ Present{% else %}✗ Absent{% endif %}
-            </td>
-            <td style="font-size:12px;color:#888;">
-              {{ r.attendance_date | to_eat }}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <!-- Summary stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-green-50 rounded-lg p-4 text-center border border-green-200">
+        <div class="text-3xl font-bold text-green-600">{{ present }}</div>
+        <div class="text-xs font-bold text-green-700 mt-2">Present</div>
+      </div>
+      <div class="bg-red-50 rounded-lg p-4 text-center border border-red-200">
+        <div class="text-3xl font-bold text-red-600">{{ absent }}</div>
+        <div class="text-xs font-bold text-red-700 mt-2">Absent</div>
+      </div>
+      <div class="bg-blue-50 rounded-lg p-4 text-center border border-blue-200">
+        <div class="text-3xl font-bold text-blue-600">{{ total }}</div>
+        <div class="text-xs font-bold text-blue-700 mt-2">Total</div>
+      </div>
+      <div class="bg-orange-50 rounded-lg p-4 text-center border border-orange-200">
+        <div class="text-3xl font-bold text-orange-600">{{ pct }}%</div>
+        <div class="text-xs font-bold text-orange-700 mt-2">Attendance</div>
+      </div>
     </div>
-    {% else %}
-    <div class="card-body" style="text-align:center;color:#aaa;padding:30px;">
-      <i class="fas fa-clipboard" style="font-size:36px;margin-bottom:10px;display:block;"></i>
-      No attendance records found for this unit yet.
+
+    <!-- Progress bar -->
+    <div class="w-full h-3 bg-gray-200 rounded-full overflow-hidden mb-6">
+      <div class="h-full rounded-full transition-all duration-800" style="width:{{ pct }}%;background:{% if pct >= 75 %}#16a34a{% elif pct >= 50 %}#f59e0b{% else %}#dc2626{% endif %};"></div>
     </div>
-    {% endif %}
+
+    <!-- Records table -->
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+      <div class="bg-blue-900 text-white px-6 py-4">
+        <h3 class="font-bold"><i class="fas fa-clipboard-list"></i> Attendance Records</h3>
+      </div>
+      {% if records %}
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-gray-50 border-b-2 border-gray-200">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-bold text-gray-700">#</th>
+              <th class="px-4 py-3 text-left text-xs font-bold text-gray-700">Week</th>
+              <th class="px-4 py-3 text-left text-xs font-bold text-gray-700">Lesson</th>
+              <th class="px-4 py-3 text-left text-xs font-bold text-gray-700">Status</th>
+              <th class="px-4 py-3 text-left text-xs font-bold text-gray-700">Date &amp; Time</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {% for r in records %}
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3 text-sm text-gray-400">{{ loop.index }}</td>
+              <td class="px-4 py-3 text-sm">Week {{ r.week }}</td>
+              <td class="px-4 py-3 text-sm">{{ r.lesson }}</td>
+              <td class="px-4 py-3 text-sm">
+                <span class="inline-block px-3 py-1 rounded-full text-xs font-bold {% if r.status == 'present' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                  {% if r.status == 'present' %}✓ Present{% else %}✗ Absent{% endif %}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-xs text-gray-500">
+                {{ r.attendance_date | to_eat }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="p-8 text-center text-gray-400">
+        <i class="fas fa-inbox text-3xl mb-3 block opacity-40"></i>
+        No attendance records found.
+      </div>
+      {% endif %}
+    </div>
+
   </div>
 </div>
-</body>
-</html>
+{% endblock %}
+

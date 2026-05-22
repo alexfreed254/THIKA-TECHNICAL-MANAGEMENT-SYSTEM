@@ -1,0 +1,89 @@
+{% extends "base_tailwind.html" %}
+{% block title %}Registrar Review{% endblock %}
+{% block page_title %}Registrar — Exam Booking Approvals{% endblock %}
+
+{% block sidebar_nav %}
+<div class="menu-section">Examination</div>
+<a href="/exam/registrar-review" class="sidebar-link"><i class="fas fa-stamp fa-fw"></i> Registrar Queue</a>
+<a href="/exam/admin/all-bookings" class="sidebar-link"><i class="fas fa-list fa-fw"></i> All Bookings</a>
+<a href="/exam/admin/series" class="sidebar-link"><i class="fas fa-calendar fa-fw"></i> Exam Series</a>
+<a href="/exam/admin/centers" class="sidebar-link"><i class="fas fa-building fa-fw"></i> Centers</a>
+<div class="menu-section">Other</div>
+<a href="/clearance/admin/all" class="sidebar-link"><i class="fas fa-certificate fa-fw"></i> Clearance</a>
+<a href="/results/view" class="sidebar-link"><i class="fas fa-chart-bar fa-fw"></i> Results</a>
+{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h2 class="text-xl font-bold text-gray-800">Registrar Approval Queue</h2>
+    <p class="text-sm text-gray-500 mt-1">{{ bookings|length }} booking(s) awaiting registrar approval</p>
+  </div>
+</div>
+
+{% if not bookings %}
+<div class="card text-center py-16">
+  <i class="fas fa-check-circle text-5xl text-green-400 mb-4"></i>
+  <p class="text-gray-500 text-lg font-medium">No pending approvals</p>
+</div>
+{% else %}
+<div class="space-y-4">
+  {% for b in bookings %}
+  <div class="card hover:shadow-md transition-shadow">
+    <div class="flex items-start justify-between flex-wrap gap-4 mb-4">
+      <div>
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-user-graduate text-green-700"></i>
+          </div>
+          <div>
+            <p class="font-bold text-gray-800">{{ (b.students or {}).get('full_name', b.full_name) }}</p>
+            <p class="text-xs text-gray-500">{{ (b.students or {}).get('admission_number', b.admission_number) }}</p>
+          </div>
+          <span class="badge-info">HOD Approved</span>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+          <div><span class="text-gray-500 text-xs">Series</span><p class="font-medium">{{ (b.exam_series or {}).get('name','—') }}</p></div>
+          <div><span class="text-gray-500 text-xs">Center</span><p class="font-medium">{{ (b.assessment_centers or {}).get('name','—') }}</p></div>
+          <div><span class="text-gray-500 text-xs">Course</span><p class="font-medium">{{ b.course_name or '—' }}</p></div>
+          <div><span class="text-gray-500 text-xs">Total Fee</span><p class="font-bold text-blue-700">KES {{ "%.2f"|format(b.total_cost or 0) }}</p></div>
+        </div>
+        {% if b.hod_comment %}
+        <div class="mt-2 p-2 bg-green-50 rounded text-xs text-green-700 border border-green-200">
+          <strong>HOD Comment:</strong> {{ b.hod_comment }}
+        </div>
+        {% endif %}
+      </div>
+      <a href="/exam/booking/{{ b.id }}" class="btn-ghost text-xs">
+        <i class="fas fa-eye mr-1"></i>Full Details
+      </a>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+      <form method="POST" action="/exam/registrar-action/{{ b.id }}" class="flex gap-2 items-end">
+        <div class="flex-1">
+          <label class="form-label text-xs">Comment (optional)</label>
+          <input type="text" name="comment" class="form-input text-xs" placeholder="Add a comment...">
+        </div>
+        <input type="hidden" name="action" value="approve">
+        <button type="submit" class="btn-success text-xs whitespace-nowrap"
+                onclick="return confirm('Approve this booking?')">
+          <i class="fas fa-check mr-1"></i>Approve
+        </button>
+      </form>
+      <form method="POST" action="/exam/registrar-action/{{ b.id }}" class="flex gap-2 items-end">
+        <div class="flex-1">
+          <label class="form-label text-xs">Rejection Reason <span class="text-red-500">*</span></label>
+          <input type="text" name="comment" class="form-input text-xs" placeholder="Reason..." required>
+        </div>
+        <input type="hidden" name="action" value="reject">
+        <button type="submit" class="btn-danger text-xs whitespace-nowrap"
+                onclick="return confirm('Reject this booking?')">
+          <i class="fas fa-times mr-1"></i>Reject
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

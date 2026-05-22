@@ -1,0 +1,140 @@
+{% extends "base_tailwind.html" %}
+{% block title %}Industrial Logbook{% endblock %}
+{% block page_title %}Industrial Attachment Logbook{% endblock %}
+
+{% block sidebar_nav %}
+<div class="menu-section">Logbook</div>
+<a href="/logbook/dashboard" class="sidebar-link"><i class="fas fa-tachometer-alt fa-fw"></i> Dashboard</a>
+<a href="/logbook/submit" class="sidebar-link"><i class="fas fa-plus-circle fa-fw"></i> Submit Entry</a>
+<a href="/logbook/my-logbook" class="sidebar-link"><i class="fas fa-book-open fa-fw"></i> My Logbook</a>
+<div class="menu-section">My Account</div>
+<a href="/student/dashboard" class="sidebar-link"><i class="fas fa-graduation-cap fa-fw"></i> Attendance</a>
+<a href="/exam/my-bookings" class="sidebar-link"><i class="fas fa-file-alt fa-fw"></i> Exam Booking</a>
+<a href="/results/my-results" class="sidebar-link"><i class="fas fa-chart-bar fa-fw"></i> My Results</a>
+<a href="/clearance/my-clearance" class="sidebar-link"><i class="fas fa-certificate fa-fw"></i> Clearance</a>
+{% endblock %}
+
+{% block content %}
+<!-- Placement Info -->
+{% if placement %}
+<div class="card mb-6 bg-gradient-to-r from-blue-700 to-blue-800 text-white">
+  <div class="flex items-center justify-between flex-wrap gap-4">
+    <div>
+      <p class="text-blue-200 text-xs font-semibold uppercase tracking-wide">Current Placement</p>
+      <h3 class="text-xl font-bold mt-1">{{ (placement.employers or {}).get('company_name', '—') }}</h3>
+      <p class="text-blue-200 text-sm mt-1">
+        Supervisor: {{ (placement.industry_supervisors or {}).get('full_name', '—') }}
+      </p>
+      <p class="text-blue-200 text-xs mt-1">
+        {{ placement.start_date or '—' }} → {{ placement.end_date or 'Ongoing' }}
+      </p>
+    </div>
+    <div class="text-right">
+      <div class="grid grid-cols-3 gap-4 text-center">
+        <div class="bg-white/10 rounded-lg p-3">
+          <p class="text-2xl font-bold">{{ total_entries }}</p>
+          <p class="text-xs text-blue-200">Total Entries</p>
+        </div>
+        <div class="bg-white/10 rounded-lg p-3">
+          <p class="text-2xl font-bold text-green-300">{{ approved_count }}</p>
+          <p class="text-xs text-blue-200">Approved</p>
+        </div>
+        <div class="bg-white/10 rounded-lg p-3">
+          <p class="text-2xl font-bold text-yellow-300">{{ pending_count }}</p>
+          <p class="text-xs text-blue-200">Pending</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card mb-6 bg-yellow-50 border border-yellow-200">
+  <div class="flex items-center gap-3">
+    <i class="fas fa-exclamation-triangle text-yellow-500 text-xl"></i>
+    <div>
+      <p class="font-semibold text-yellow-800">No Active Placement</p>
+      <p class="text-sm text-yellow-700">You have not been assigned to an industrial attachment yet. Contact your trainer.</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Today's Submission Slots -->
+<div class="card mb-6">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="font-bold text-gray-800"><i class="fas fa-clock mr-2 text-blue-600"></i>Today's Submission Slots</h3>
+    <span class="text-sm text-gray-500">{{ today.strftime('%A, %d %B %Y') }} — Current time: {{ now_time }}</span>
+  </div>
+  <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
+    {% for slot in submission_slots %}
+    {% set is_submitted = slot in submitted_slots %}
+    {% set is_available = slot <= now_time and not is_submitted %}
+    {% set is_future = slot > now_time %}
+    <div class="rounded-xl border-2 p-3 text-center transition-all
+      {% if is_submitted %}border-green-400 bg-green-50
+      {% elif is_available %}border-blue-400 bg-blue-50 cursor-pointer hover:bg-blue-100
+      {% else %}border-gray-200 bg-gray-50 opacity-50{% endif %}">
+      <p class="text-sm font-bold
+        {% if is_submitted %}text-green-700
+        {% elif is_available %}text-blue-700
+        {% else %}text-gray-400{% endif %}">{{ slot }}</p>
+      {% if is_submitted %}
+        <i class="fas fa-check-circle text-green-500 mt-1"></i>
+        <p class="text-xs text-green-600 mt-1">Submitted</p>
+      {% elif is_available %}
+        <a href="/logbook/submit?slot={{ slot }}" class="block mt-1">
+          <i class="fas fa-plus-circle text-blue-500"></i>
+          <p class="text-xs text-blue-600 mt-1">Submit</p>
+        </a>
+      {% else %}
+        <i class="fas fa-clock text-gray-300 mt-1"></i>
+        <p class="text-xs text-gray-400 mt-1">Upcoming</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Recent Entries -->
+<div class="card">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="font-bold text-gray-800"><i class="fas fa-history mr-2 text-blue-600"></i>Recent Entries (Last 7 Days)</h3>
+    <a href="/logbook/my-logbook" class="text-sm text-blue-600 hover:underline">View All</a>
+  </div>
+  {% if not recent_entries %}
+  <div class="text-center py-8 text-gray-400">
+    <i class="fas fa-book-open text-3xl mb-2"></i>
+    <p>No entries yet. Start submitting your daily activities.</p>
+  </div>
+  {% else %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-blue-700">
+          <th class="table-th">Date</th>
+          <th class="table-th">Slot</th>
+          <th class="table-th">Activity</th>
+          <th class="table-th">Status</th>
+          <th class="table-th">Supervisor Comment</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in recent_entries %}
+        <tr class="table-tr">
+          <td class="table-td">{{ e.submission_date }}</td>
+          <td class="table-td font-medium text-blue-700">{{ e.submission_slot }}</td>
+          <td class="table-td">{{ e.activity_title[:50] }}{% if e.activity_title|length > 50 %}...{% endif %}</td>
+          <td class="table-td">
+            {% if e.status == 'approved' %}<span class="badge-approved">Approved</span>
+            {% elif e.status == 'rejected' %}<span class="badge-rejected">Rejected</span>
+            {% else %}<span class="badge-pending">Pending</span>{% endif %}
+          </td>
+          <td class="table-td text-gray-500 text-xs">{{ e.supervisor_comment or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

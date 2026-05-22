@@ -1,0 +1,148 @@
+{% extends "base_tailwind.html" %}
+{% block title %}Review Logbook Entry{% endblock %}
+{% block page_title %}Review Logbook Entry{% endblock %}
+
+{% block sidebar_nav %}
+<a href="/logbook/supervisor/dashboard" class="sidebar-link"><i class="fas fa-tachometer-alt fa-fw"></i> Dashboard</a>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="card mb-4">
+    <div class="flex items-center gap-4 mb-4">
+      <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+        <i class="fas fa-user-graduate text-blue-700 text-xl"></i>
+      </div>
+      <div>
+        <p class="font-bold text-gray-800">{{ (entry.students or {}).get('full_name', '—') }}</p>
+        <p class="text-sm text-gray-500">{{ (entry.students or {}).get('admission_number', '—') }}</p>
+      </div>
+      <div class="ml-auto text-right">
+        <span class="badge-info text-sm">{{ entry.submission_slot }}</span>
+        <p class="text-sm text-gray-500 mt-1">{{ entry.submission_date }}</p>
+      </div>
+    </div>
+
+    <div class="space-y-4">
+      <div>
+        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Activity Title</h4>
+        <p class="text-gray-800 font-medium">{{ entry.activity_title }}</p>
+      </div>
+      {% if entry.description %}
+      <div>
+        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Description</h4>
+        <p class="text-gray-700 text-sm">{{ entry.description }}</p>
+      </div>
+      {% endif %}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% if entry.skills_gained %}
+        <div>
+          <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Skills Gained</h4>
+          <p class="text-gray-700 text-sm">{{ entry.skills_gained }}</p>
+        </div>
+        {% endif %}
+        {% if entry.tools_materials %}
+        <div>
+          <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Tools / Materials</h4>
+          <p class="text-gray-700 text-sm">{{ entry.tools_materials }}</p>
+        </div>
+        {% endif %}
+        {% if entry.challenges_faced %}
+        <div>
+          <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Challenges Faced</h4>
+          <p class="text-gray-700 text-sm">{{ entry.challenges_faced }}</p>
+        </div>
+        {% endif %}
+        {% if entry.time_spent %}
+        <div>
+          <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Time Spent</h4>
+          <p class="text-gray-700 text-sm">{{ entry.time_spent }} hour(s)</p>
+        </div>
+        {% endif %}
+      </div>
+      {% if entry.gps_location_name or entry.gps_latitude %}
+      <div>
+        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+          <i class="fas fa-map-marker-alt mr-1 text-red-500"></i>GPS Location
+        </h4>
+        <p class="text-gray-700 text-sm">
+          {{ entry.gps_location_name or '' }}
+          {% if entry.gps_latitude %}({{ entry.gps_latitude }}, {{ entry.gps_longitude }}){% endif %}
+        </p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Evidence Files -->
+  {% if evidence %}
+  <div class="card mb-4">
+    <h3 class="font-bold text-gray-800 mb-3"><i class="fas fa-paperclip mr-2 text-blue-600"></i>Evidence Files</h3>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+      {% for ev in evidence %}
+      <a href="{{ ev.file_url }}" target="_blank"
+         class="border border-gray-200 rounded-lg p-3 hover:bg-blue-50 transition-colors flex items-center gap-2">
+        {% if ev.file_type == 'photo' %}
+          <i class="fas fa-image text-blue-500 text-xl"></i>
+        {% elif ev.file_type == 'video' %}
+          <i class="fas fa-video text-purple-500 text-xl"></i>
+        {% elif ev.file_type == 'pdf' %}
+          <i class="fas fa-file-pdf text-red-500 text-xl"></i>
+        {% else %}
+          <i class="fas fa-file text-gray-500 text-xl"></i>
+        {% endif %}
+        <span class="text-xs text-gray-600 truncate">{{ ev.file_name or 'View File' }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Approval Form -->
+  {% if entry.status == 'pending' %}
+  <div class="card">
+    <h3 class="font-bold text-gray-800 mb-4"><i class="fas fa-gavel mr-2 text-blue-600"></i>Review Decision</h3>
+    {% if error %}
+    <div class="flash-error mb-4"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>
+    {% endif %}
+    <div class="mb-4">
+      <label class="form-label">Comment (optional)</label>
+      <textarea id="commentField" class="form-input" rows="3"
+                placeholder="Add feedback or comments for the trainee..."></textarea>
+    </div>
+    <div class="flex gap-3">
+      <form method="POST" class="flex-1">
+        <input type="hidden" name="action" value="approve">
+        <input type="hidden" name="supervisor_comment" id="approveComment">
+        <button type="submit" class="btn-success w-full"
+                onclick="document.getElementById('approveComment').value=document.getElementById('commentField').value">
+          <i class="fas fa-check mr-2"></i>Approve Entry
+        </button>
+      </form>
+      <form method="POST" class="flex-1">
+        <input type="hidden" name="action" value="reject">
+        <input type="hidden" name="supervisor_comment" id="rejectComment">
+        <button type="submit" class="btn-danger w-full"
+                onclick="document.getElementById('rejectComment').value=document.getElementById('commentField').value">
+          <i class="fas fa-times mr-2"></i>Reject Entry
+        </button>
+      </form>
+    </div>
+  </div>
+  {% else %}
+  <div class="card {% if entry.status == 'approved' %}bg-green-50 border-green-200{% else %}bg-red-50 border-red-200{% endif %} border">
+    <div class="flex items-center gap-3">
+      <i class="fas fa-{% if entry.status == 'approved' %}check-circle text-green-500{% else %}times-circle text-red-500{% endif %} text-2xl"></i>
+      <div>
+        <p class="font-semibold {% if entry.status == 'approved' %}text-green-800{% else %}text-red-800{% endif %}">
+          Entry {{ entry.status | title }}
+        </p>
+        {% if entry.supervisor_comment %}
+        <p class="text-sm text-gray-600 mt-1">{{ entry.supervisor_comment }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

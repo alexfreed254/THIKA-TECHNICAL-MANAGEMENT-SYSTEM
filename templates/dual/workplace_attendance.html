@@ -1,0 +1,174 @@
+{% extends "base_tailwind.html" %}
+{% block title %}Workplace Attendance{% endblock %}
+{% block page_title %}Workplace Attendance Record{% endblock %}
+
+{% block sidebar_nav %}
+<div class="menu-section">Dual Training</div>
+<a href="/dual-training/employer-dashboard" class="sidebar-link"><i class="fas fa-tachometer-alt fa-fw"></i> Dashboard</a>
+<a href="/dual-training/employers" class="sidebar-link"><i class="fas fa-building fa-fw"></i> Employers</a>
+<a href="/dual-training/allocations" class="sidebar-link"><i class="fas fa-industry fa-fw"></i> Allocations</a>
+<a href="/dual-training/monitoring" class="sidebar-link"><i class="fas fa-chart-line fa-fw"></i> Monitoring</a>
+<div class="menu-section">Logbook</div>
+<a href="/logbook/admin/placements" class="sidebar-link"><i class="fas fa-briefcase fa-fw"></i> Placements</a>
+<a href="/logbook/trainer/monitoring" class="sidebar-link"><i class="fas fa-eye fa-fw"></i> Logbook Monitor</a>
+{% endblock %}
+
+{% block content %}
+<!-- Allocation Banner -->
+<div class="card mb-6 border-l-4 border-green-600">
+  <div class="flex items-center justify-between flex-wrap gap-4">
+    <div class="flex items-center gap-4">
+      <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
+        <i class="fas fa-calendar-check text-green-700 text-xl"></i>
+      </div>
+      <div>
+        <p class="font-bold text-gray-800 text-lg">{{ (alloc.students or {}).get('full_name','—') }}</p>
+        <p class="text-sm text-gray-500">
+          Adm: {{ (alloc.students or {}).get('admission_number','—') }} &nbsp;|&nbsp;
+          Employer: <strong>{{ (alloc.employers or {}).get('company_name','—') }}</strong>
+        </p>
+      </div>
+    </div>
+    <div class="text-right">
+      <p class="text-2xl font-bold text-green-700">{{ total_hours | round(1) }}</p>
+      <p class="text-xs text-gray-500">Total Hours Logged</p>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Record Form -->
+  <div class="lg:col-span-1">
+    <div class="card">
+      <h3 class="font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200">
+        <i class="fas fa-plus-circle mr-2 text-green-600"></i>Record Attendance
+      </h3>
+      {% if error %}<div class="flash-error mb-3 text-xs"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>{% endif %}
+      <form method="POST">
+        <div class="space-y-3">
+          <div>
+            <label class="form-label text-xs">Date <span class="text-red-500">*</span></label>
+            <input type="date" name="date" class="form-input text-xs" required>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="form-label text-xs">Check In</label>
+              <input type="time" name="check_in" class="form-input text-xs">
+            </div>
+            <div>
+              <label class="form-label text-xs">Check Out</label>
+              <input type="time" name="check_out" class="form-input text-xs">
+            </div>
+          </div>
+          <div>
+            <label class="form-label text-xs">Hours Worked</label>
+            <input type="number" name="hours_worked" step="0.5" min="0" max="24"
+                   class="form-input text-xs" placeholder="e.g. 8.0">
+          </div>
+          <div>
+            <label class="form-label text-xs">Status</label>
+            <select name="status" class="form-input text-xs">
+              <option value="present">Present</option>
+              <option value="absent">Absent</option>
+              <option value="late">Late</option>
+              <option value="half_day">Half Day</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label text-xs">Supervisor Note</label>
+            <textarea name="supervisor_note" rows="2" class="form-input text-xs"
+                      placeholder="Optional note..."></textarea>
+          </div>
+          <button type="submit" class="btn-primary w-full text-sm">
+            <i class="fas fa-save mr-2"></i>Save Record
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="card mt-4">
+      <h3 class="font-bold text-gray-800 mb-3 text-sm">
+        <i class="fas fa-chart-pie mr-2 text-blue-600"></i>Summary
+      </h3>
+      {% set present_count = records | selectattr('status','eq','present') | list | length %}
+      {% set absent_count  = records | selectattr('status','eq','absent')  | list | length %}
+      {% set late_count    = records | selectattr('status','eq','late')    | list | length %}
+      {% set half_count    = records | selectattr('status','eq','half_day')| list | length %}
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between items-center">
+          <span class="text-gray-600">Total Days</span>
+          <span class="font-bold">{{ records|length }}</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-green-600">Present</span>
+          <span class="font-bold text-green-700">{{ present_count }}</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-red-600">Absent</span>
+          <span class="font-bold text-red-700">{{ absent_count }}</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-yellow-600">Late</span>
+          <span class="font-bold text-yellow-700">{{ late_count }}</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-blue-600">Half Day</span>
+          <span class="font-bold text-blue-700">{{ half_count }}</span>
+        </div>
+        <div class="flex justify-between items-center border-t border-gray-200 pt-2 mt-2">
+          <span class="text-gray-700 font-semibold">Total Hours</span>
+          <span class="font-bold text-blue-700">{{ total_hours | round(1) }} hrs</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Records Table -->
+  <div class="lg:col-span-2">
+    <div class="card overflow-hidden p-0">
+      <div class="px-4 py-3 border-b border-gray-100">
+        <h3 class="font-bold text-gray-800">Attendance Records ({{ records|length }})</h3>
+      </div>
+      {% if not records %}
+      <div class="text-center py-12 text-gray-400">
+        <i class="fas fa-calendar-times text-4xl mb-3"></i>
+        <p>No attendance records yet.</p>
+      </div>
+      {% else %}
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-blue-700">
+              <th class="table-th">Date</th>
+              <th class="table-th">Check In</th>
+              <th class="table-th">Check Out</th>
+              <th class="table-th text-center">Hours</th>
+              <th class="table-th">Status</th>
+              <th class="table-th">Note</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in records %}
+            <tr class="table-tr">
+              <td class="table-td font-medium">{{ r.date }}</td>
+              <td class="table-td text-xs">{{ r.check_in or '—' }}</td>
+              <td class="table-td text-xs">{{ r.check_out or '—' }}</td>
+              <td class="table-td text-center font-bold text-blue-700">{{ r.hours_worked or '—' }}</td>
+              <td class="table-td">
+                {% if r.status == 'present' %}<span class="badge-approved">Present</span>
+                {% elif r.status == 'absent' %}<span class="badge-rejected">Absent</span>
+                {% elif r.status == 'late' %}<span class="badge-pending">Late</span>
+                {% else %}<span class="badge-info">Half Day</span>{% endif %}
+              </td>
+              <td class="table-td text-xs text-gray-500">{{ r.supervisor_note or '—' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

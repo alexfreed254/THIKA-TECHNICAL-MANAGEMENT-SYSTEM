@@ -1,14 +1,21 @@
-.env
+# Byte-compiled / optimized / DLL files
 __pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+venv/
+ENV/
+
+# Node.js
+node_modules/
+server/node_modules/
+
+# Python cache
 *.pyc
 *.pyo
-*.pyd
-.Python
-*.egg-info/
-dist/
-build/
-venv/
-.venv/
-env/
-*.log
+
+# OS files
 .DS_Store
+Thumbs.db

@@ -1,15 +1,23 @@
 services:
   - type: web
-    name: tttti-attendance
+    name: ttieplatform
     env: python
+    runtime: python
+    plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
     envVars:
+      - key: FLASK_ENV
+        value: production
       - key: SECRET_KEY
-        generateValue: true          # Render auto-generates a secure value
+        generateValue: true
       - key: SUPABASE_URL
-        sync: false                  # Set manually in Render dashboard
+        sync: false
       - key: SUPABASE_ANON_KEY
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+      - key: INSTITUTION_NAME
+        value: Thika Technical Training Institute
+
+

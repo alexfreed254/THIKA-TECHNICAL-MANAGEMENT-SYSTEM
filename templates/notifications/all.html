@@ -1,0 +1,141 @@
+{% extends "base_tailwind.html" %}
+{% block title %}Notifications{% endblock %}
+{% block page_title %}All Notifications{% endblock %}
+
+{% block sidebar_nav %}
+<div class="menu-section">Notifications</div>
+<a href="/notifications/" class="sidebar-link"><i class="fas fa-bell fa-fw"></i> All Notifications</a>
+<div class="menu-section">Quick Links</div>
+{% set role = current_user.role if current_user else '' %}
+{% if role == 'super_admin' %}
+<a href="/super-admin/welcome" class="sidebar-link"><i class="fas fa-tachometer-alt fa-fw"></i> Dashboard</a>
+<a href="/super-admin/logs" class="sidebar-link"><i class="fas fa-history fa-fw"></i> System Logs</a>
+{% elif role == 'dept_admin' %}
+<a href="/dept-admin/welcome" class="sidebar-link"><i class="fas fa-tachometer-alt fa-fw"></i> Dashboard</a>
+{% elif role == 'trainer' %}
+<a href="/lecturer/dashboard" class="sidebar-link"><i class="fas fa-tachometer-alt fa-fw"></i> Dashboard</a>
+{% elif role == 'student' %}
+<a href="/student/dashboard" class="sidebar-link"><i class="fas fa-tachometer-alt fa-fw"></i> Dashboard</a>
+{% elif role in ('hod', 'deputy_principal', 'registrar', 'finance') %}
+<a href="/clearance/admin/all" class="sidebar-link"><i class="fas fa-certificate fa-fw"></i> Clearance</a>
+<a href="/exam/admin/all-bookings" class="sidebar-link"><i class="fas fa-book fa-fw"></i> Exam Bookings</a>
+{% elif role == 'industry_supervisor' %}
+<a href="/logbook/supervisor/dashboard" class="sidebar-link"><i class="fas fa-tachometer-alt fa-fw"></i> Dashboard</a>
+{% elif role == 'employer' %}
+<a href="/dual-training/employer-dashboard" class="sidebar-link"><i class="fas fa-tachometer-alt fa-fw"></i> Dashboard</a>
+{% elif role == 'external_verifier' %}
+<a href="/verification/external/dashboard" class="sidebar-link"><i class="fas fa-tachometer-alt fa-fw"></i> Dashboard</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h2 class="text-xl font-bold text-gray-800">Notifications</h2>
+    <p class="text-sm text-gray-500 mt-1">{{ notifs|length }} notification(s)</p>
+  </div>
+  {% if notifs %}
+  <form method="POST" action="/notifications/mark-all-read" id="markAllForm">
+    <button type="button" onclick="markAllReadPage()"
+            class="btn-ghost text-sm flex items-center gap-2">
+      <i class="fas fa-check-double"></i> Mark all as read
+    </button>
+  </form>
+  {% endif %}
+</div>
+
+{% if not notifs %}
+<div class="card text-center py-20">
+  <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+    <i class="fas fa-bell-slash text-3xl text-blue-300"></i>
+  </div>
+  <p class="text-gray-500 text-lg font-medium">No notifications yet</p>
+  <p class="text-gray-400 text-sm mt-1">You'll see updates from all modules here.</p>
+</div>
+{% else %}
+<div class="space-y-3" id="notifContainer">
+  {% for n in notifs %}
+  <div class="card hover:shadow-md transition-shadow cursor-pointer notif-item {% if not n.is_read %}border-l-4 border-blue-500 bg-blue-50/30{% endif %}"
+       id="notif-{{ n.id }}"
+       onclick="markReadItem({{ n.id }}, this)">
+    <div class="flex items-start gap-4">
+      <!-- Icon -->
+      <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0
+                  {% if n.type == 'success' %}bg-green-100
+                  {% elif n.type == 'error' or n.type == 'rejection' %}bg-red-100
+                  {% elif n.type == 'warning' %}bg-yellow-100
+                  {% elif n.type == 'approval' %}bg-purple-100
+                  {% else %}bg-blue-100{% endif %}">
+        <i class="fas
+                  {% if n.type == 'success' %}fa-check-circle text-green-600
+                  {% elif n.type == 'error' or n.type == 'rejection' %}fa-times-circle text-red-600
+                  {% elif n.type == 'warning' %}fa-exclamation-triangle text-yellow-600
+                  {% elif n.type == 'approval' %}fa-stamp text-purple-600
+                  {% else %}fa-info-circle text-blue-600{% endif %}"></i>
+      </div>
+
+      <!-- Content -->
+      <div class="flex-1 min-w-0">
+        <div class="flex items-start justify-between gap-2">
+          <p class="font-semibold text-gray-800 text-sm {% if not n.is_read %}text-blue-900{% endif %}">
+            {{ n.title }}
+          </p>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            {% if not n.is_read %}
+            <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+            {% endif %}
+            <span class="text-xs text-gray-400 whitespace-nowrap">
+              {{ n.created_at | to_eat('%d %b %Y %H:%M') }}
+            </span>
+          </div>
+        </div>
+        <p class="text-sm text-gray-600 mt-1">{{ n.message }}</p>
+        <div class="flex items-center gap-3 mt-2">
+          {% if n.module %}
+          <span class="inline-flex items-center gap-1 text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+            <i class="fas fa-tag"></i> {{ n.module | replace('_',' ') | title }}
+          </span>
+          {% endif %}
+          {% if n.is_read %}
+          <span class="text-xs text-gray-400">
+            <i class="fas fa-check mr-1"></i>Read {{ n.read_at | to_eat('%d %b %Y') if n.read_at else '' }}
+          </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function markReadItem(id, el) {
+  if (el.classList.contains('border-blue-500')) {
+    fetch(`/notifications/mark-read/${id}`, { method: 'POST' })
+      .then(() => {
+        el.classList.remove('border-l-4', 'border-blue-500', 'bg-blue-50/30');
+        const dot = el.querySelector('.w-2.h-2.bg-blue-500');
+        if (dot) dot.remove();
+      })
+      .catch(() => {});
+  }
+}
+
+function markAllReadPage() {
+  fetch('/notifications/mark-all-read', { method: 'POST' })
+    .then(() => {
+      document.querySelectorAll('.notif-item').forEach(el => {
+        el.classList.remove('border-l-4', 'border-blue-500', 'bg-blue-50/30');
+        const dot = el.querySelector('.w-2.h-2.bg-blue-500');
+        if (dot) dot.remove();
+      });
+      const btn = document.querySelector('[onclick="markAllReadPage()"]');
+      if (btn) btn.style.display = 'none';
+    })
+    .catch(() => {});
+}
+</script>
+{% endblock %}

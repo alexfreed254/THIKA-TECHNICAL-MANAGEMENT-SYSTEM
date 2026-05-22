@@ -1,0 +1,98 @@
+{% extends "base_tailwind.html" %}
+{% block title %}My Logbook{% endblock %}
+{% block page_title %}My Industrial Logbook{% endblock %}
+
+{% block sidebar_nav %}
+<div class="menu-section">Logbook</div>
+<a href="/logbook/dashboard" class="sidebar-link"><i class="fas fa-tachometer-alt fa-fw"></i> Dashboard</a>
+<a href="/logbook/submit" class="sidebar-link"><i class="fas fa-plus-circle fa-fw"></i> Submit Entry</a>
+<a href="/logbook/my-logbook" class="sidebar-link"><i class="fas fa-book-open fa-fw"></i> My Logbook</a>
+<div class="menu-section">My Account</div>
+<a href="/student/dashboard" class="sidebar-link"><i class="fas fa-graduation-cap fa-fw"></i> Attendance</a>
+<a href="/results/my-results" class="sidebar-link"><i class="fas fa-chart-bar fa-fw"></i> My Results</a>
+<a href="/clearance/my-clearance" class="sidebar-link"><i class="fas fa-certificate fa-fw"></i> Clearance</a>
+{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h2 class="text-xl font-bold text-gray-800">My Logbook</h2>
+    <p class="text-sm text-gray-500 mt-1">{{ student.full_name }} — {{ student.admission_number }}</p>
+  </div>
+  <a href="/logbook/submit" class="btn-primary"><i class="fas fa-plus mr-2"></i>New Entry</a>
+</div>
+
+{% if placement %}
+<div class="card mb-4 bg-blue-50 border border-blue-200 py-3">
+  <div class="flex items-center gap-4 flex-wrap">
+    <div><span class="text-xs text-blue-500 font-semibold">Company</span>
+      <p class="font-bold text-blue-800">{{ (placement.employers or {}).get('company_name','—') }}</p></div>
+    <div><span class="text-xs text-blue-500 font-semibold">Supervisor</span>
+      <p class="font-medium text-blue-700">{{ (placement.industry_supervisors or {}).get('full_name','—') }}</p></div>
+    <div><span class="text-xs text-blue-500 font-semibold">Period</span>
+      <p class="font-medium text-blue-700">{{ placement.start_date or '—' }} → {{ placement.end_date or 'Ongoing' }}</p></div>
+    <div class="ml-auto">
+      <span class="text-2xl font-bold text-blue-700">{{ entries|length }}</span>
+      <span class="text-xs text-blue-500 ml-1">total entries</span>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if not grouped %}
+<div class="card text-center py-16">
+  <i class="fas fa-book-open text-5xl text-gray-300 mb-4"></i>
+  <p class="text-gray-500 text-lg font-medium">No logbook entries yet</p>
+  <p class="text-gray-400 text-sm mt-1">Start submitting your daily industrial activities.</p>
+  <a href="/logbook/submit" class="btn-primary mt-4 inline-block">Submit First Entry</a>
+</div>
+{% else %}
+{% for date_key, day_entries in grouped.items() | sort(reverse=True) %}
+<div class="card mb-4">
+  <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+    <h3 class="font-bold text-gray-800">
+      <i class="fas fa-calendar-day mr-2 text-blue-500"></i>{{ date_key }}
+    </h3>
+    <div class="flex gap-2">
+      {% set approved = day_entries | selectattr('status','eq','approved') | list | length %}
+      {% set pending  = day_entries | selectattr('status','eq','pending')  | list | length %}
+      {% set rejected = day_entries | selectattr('status','eq','rejected') | list | length %}
+      {% if approved %}<span class="badge-approved">{{ approved }} approved</span>{% endif %}
+      {% if pending  %}<span class="badge-pending">{{ pending }} pending</span>{% endif %}
+      {% if rejected %}<span class="badge-rejected">{{ rejected }} rejected</span>{% endif %}
+    </div>
+  </div>
+  <div class="space-y-3">
+    {% for e in day_entries | sort(attribute='submission_slot') %}
+    <div class="flex items-start gap-4 p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors">
+      <div class="flex-shrink-0 w-16 text-center">
+        <span class="inline-block bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-lg">{{ e.submission_slot }}</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-semibold text-gray-800 text-sm">{{ e.activity_title }}</p>
+        {% if e.description %}
+        <p class="text-xs text-gray-500 mt-1 line-clamp-2">{{ e.description }}</p>
+        {% endif %}
+        <div class="flex flex-wrap gap-3 mt-2 text-xs text-gray-400">
+          {% if e.time_spent %}<span><i class="fas fa-clock mr-1"></i>{{ e.time_spent }}h</span>{% endif %}
+          {% if e.gps_location_name %}<span><i class="fas fa-map-marker-alt mr-1"></i>{{ e.gps_location_name[:30] }}</span>{% endif %}
+          {% if e.is_backdated %}<span class="text-orange-500"><i class="fas fa-exclamation-triangle mr-1"></i>Backdated</span>{% endif %}
+        </div>
+        {% if e.supervisor_comment %}
+        <div class="mt-2 p-2 bg-yellow-50 rounded text-xs text-yellow-800 border border-yellow-200">
+          <i class="fas fa-comment mr-1"></i>{{ e.supervisor_comment }}
+        </div>
+        {% endif %}
+      </div>
+      <div class="flex-shrink-0">
+        {% if e.status == 'approved' %}<span class="badge-approved">Approved</span>
+        {% elif e.status == 'rejected' %}<span class="badge-rejected">Rejected</span>
+        {% else %}<span class="badge-pending">Pending</span>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,167 @@
+{% extends "base_tailwind.html" %}
+{% block title %}Competency Tracking{% endblock %}
+{% block page_title %}Competency Tracking{% endblock %}
+
+{% block sidebar_nav %}
+<div class="menu-section">Dual Training</div>
+<a href="/dual-training/employer-dashboard" class="sidebar-link"><i class="fas fa-tachometer-alt fa-fw"></i> Dashboard</a>
+<a href="/dual-training/employers" class="sidebar-link"><i class="fas fa-building fa-fw"></i> Employers</a>
+<a href="/dual-training/allocations" class="sidebar-link"><i class="fas fa-industry fa-fw"></i> Allocations</a>
+<a href="/dual-training/monitoring" class="sidebar-link"><i class="fas fa-chart-line fa-fw"></i> Monitoring</a>
+<div class="menu-section">Logbook</div>
+<a href="/logbook/admin/placements" class="sidebar-link"><i class="fas fa-briefcase fa-fw"></i> Placements</a>
+<a href="/logbook/trainer/monitoring" class="sidebar-link"><i class="fas fa-eye fa-fw"></i> Logbook Monitor</a>
+{% endblock %}
+
+{% block content %}
+<!-- Allocation Banner -->
+<div class="card mb-6 border-l-4 border-purple-600">
+  <div class="flex items-center gap-4">
+    <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+      <i class="fas fa-tasks text-purple-700 text-xl"></i>
+    </div>
+    <div>
+      <p class="font-bold text-gray-800 text-lg">{{ (alloc.students or {}).get('full_name','—') }}</p>
+      <p class="text-sm text-gray-500">
+        Adm: {{ (alloc.students or {}).get('admission_number','—') }} &nbsp;|&nbsp;
+        Employer: <strong>{{ (alloc.employers or {}).get('company_name','—') }}</strong>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Stats Row -->
+{% set achieved = comps | selectattr('status','eq','achieved') | list | length %}
+{% set in_prog  = comps | selectattr('status','eq','in_progress') | list | length %}
+{% set not_started = comps | selectattr('status','eq','not_started') | list | length %}
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+  <div class="card text-center border-t-4 border-blue-500">
+    <p class="text-2xl font-bold text-blue-700">{{ comps|length }}</p>
+    <p class="text-xs text-gray-500 mt-1">Total Competencies</p>
+  </div>
+  <div class="card text-center border-t-4 border-green-500">
+    <p class="text-2xl font-bold text-green-700">{{ achieved }}</p>
+    <p class="text-xs text-gray-500 mt-1">Achieved</p>
+  </div>
+  <div class="card text-center border-t-4 border-yellow-500">
+    <p class="text-2xl font-bold text-yellow-700">{{ in_prog }}</p>
+    <p class="text-xs text-gray-500 mt-1">In Progress</p>
+  </div>
+  <div class="card text-center border-t-4 border-gray-400">
+    <p class="text-2xl font-bold text-gray-600">{{ not_started }}</p>
+    <p class="text-xs text-gray-500 mt-1">Not Started</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Add Competency Form -->
+  <div class="lg:col-span-1">
+    <div class="card">
+      <h3 class="font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200">
+        <i class="fas fa-plus-circle mr-2 text-purple-600"></i>Add Competency
+      </h3>
+      {% if error %}<div class="flash-error mb-3 text-xs"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>{% endif %}
+      <form method="POST">
+        <input type="hidden" name="action" value="add">
+        <div class="space-y-3">
+          <div>
+            <label class="form-label text-xs">Unit (optional)</label>
+            <select name="unit_id" class="form-input text-xs">
+              <option value="">-- Select Unit --</option>
+              {% for u in units %}
+              <option value="{{ u.id }}">{{ u.code }} — {{ u.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="form-label text-xs">Competency Name <span class="text-red-500">*</span></label>
+            <input type="text" name="competency_name" class="form-input text-xs" required
+                   placeholder="e.g. Wiring a distribution board">
+          </div>
+          <div>
+            <label class="form-label text-xs">Target Hours</label>
+            <input type="number" name="target_hours" min="0" class="form-input text-xs" placeholder="e.g. 40">
+          </div>
+          <button type="submit" class="btn-primary w-full text-sm">
+            <i class="fas fa-plus mr-2"></i>Add Competency
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Competencies List -->
+  <div class="lg:col-span-2">
+    <div class="card overflow-hidden p-0">
+      <div class="px-4 py-3 border-b border-gray-100">
+        <h3 class="font-bold text-gray-800">Competencies ({{ comps|length }})</h3>
+      </div>
+      {% if not comps %}
+      <div class="text-center py-12 text-gray-400">
+        <i class="fas fa-tasks text-4xl mb-3"></i>
+        <p>No competencies added yet.</p>
+      </div>
+      {% else %}
+      <div class="divide-y divide-gray-100">
+        {% for c in comps %}
+        <div class="p-4">
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <div>
+              <p class="font-semibold text-gray-800">{{ c.competency_name }}</p>
+              {% if c.units %}
+              <p class="text-xs text-blue-600 mt-0.5">
+                <i class="fas fa-book mr-1"></i>{{ (c.units or {}).get('code','') }} — {{ (c.units or {}).get('name','') }}
+              </p>
+              {% endif %}
+            </div>
+            {% if c.status == 'achieved' %}<span class="badge-approved flex-shrink-0">Achieved</span>
+            {% elif c.status == 'in_progress' %}<span class="badge-pending flex-shrink-0">In Progress</span>
+            {% elif c.status == 'not_achieved' %}<span class="badge-rejected flex-shrink-0">Not Achieved</span>
+            {% else %}<span class="badge-info flex-shrink-0">Not Started</span>{% endif %}
+          </div>
+
+          <!-- Hours Progress Bar -->
+          {% if c.target_hours and c.target_hours > 0 %}
+          {% set pct = [(c.achieved_hours or 0) / c.target_hours * 100, 100] | min | round %}
+          <div class="mb-3">
+            <div class="flex justify-between text-xs text-gray-500 mb-1">
+              <span>{{ c.achieved_hours or 0 }} / {{ c.target_hours }} hrs</span>
+              <span>{{ pct }}%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div class="h-2 rounded-full {% if pct >= 100 %}bg-green-500{% elif pct >= 50 %}bg-blue-500{% else %}bg-yellow-400{% endif %}"
+                   style="width:{{ pct }}%"></div>
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Update Form -->
+          <form method="POST" class="flex gap-2 items-end flex-wrap">
+            <input type="hidden" name="action" value="update">
+            <input type="hidden" name="comp_id" value="{{ c.id }}">
+            <div>
+              <label class="form-label text-xs">Achieved Hrs</label>
+              <input type="number" name="achieved_hours" value="{{ c.achieved_hours or 0 }}"
+                     min="0" class="form-input text-xs w-24">
+            </div>
+            <div>
+              <label class="form-label text-xs">Status</label>
+              <select name="status" class="form-input text-xs">
+                <option value="not_started"  {% if c.status == 'not_started'  %}selected{% endif %}>Not Started</option>
+                <option value="in_progress"  {% if c.status == 'in_progress'  %}selected{% endif %}>In Progress</option>
+                <option value="achieved"     {% if c.status == 'achieved'     %}selected{% endif %}>Achieved</option>
+                <option value="not_achieved" {% if c.status == 'not_achieved' %}selected{% endif %}>Not Achieved</option>
+              </select>
+            </div>
+            <button type="submit" class="btn-ghost text-xs py-2 px-3">
+              <i class="fas fa-save mr-1"></i>Update
+            </button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

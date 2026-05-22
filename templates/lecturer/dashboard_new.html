@@ -1,0 +1,392 @@
+{% extends "lecturer/base.html" %}
+
+{% block title %}Attendance Capture | TTTTI{% endblock %}
+{% block page_title %}Attendance Capture{% endblock %}
+
+{% block content %}
+<style>
+  .att-msg { text-align:center; font-weight:700; font-size:14px; padding:12px; border-radius:6px; display:none; margin-bottom:12px; }
+  .att-msg.success { background:#e8f5e9; color:#2e7d32; }
+  .att-msg.error   { background:#ffebee; color:#c62828; }
+  .loading-spinner {
+    border: 4px solid #f3f3f3; border-top: 4px solid #1565c0;
+    border-radius: 50%; width: 26px; height: 26px;
+    animation: spin 0.8s linear infinite; display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  /* Checkboxes */
+  .att-checkbox-wrap { display:flex; align-items:center; justify-content:center; }
+  .att-checkbox-wrap input[type="checkbox"] { display:none; }
+  .att-checkbox-label {
+    width: 28px; height: 28px;
+    border: 2px solid #ccc;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all .18s;
+    background: #fff;
+  }
+  .att-checkbox-label i { font-size: 15px; opacity: 0; transition: opacity .18s; }
+  .att-checkbox-wrap.present input:checked + .att-checkbox-label {
+    border-color: #27ae60;
+    background: #e8f5e9;
+  }
+  .att-checkbox-wrap.present input:checked + .att-checkbox-label i {
+    opacity: 1; color: #27ae60;
+  }
+  .att-checkbox-wrap.absent input:checked + .att-checkbox-label {
+    border-color: #e74c3c;
+    background: #ffebee;
+  }
+  .att-checkbox-wrap.absent input:checked + .att-checkbox-label i {
+    opacity: 1; color: #e74c3c;
+  }
+  /* Modal */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1000; align-items:center; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal-box { background:#fff; border-radius:12px; padding:28px; width:100%; max-width:420px; box-shadow:0 8px 32px rgba(0,0,0,0.2); }
+  .modal-box h3 { font-size:17px; margin-bottom:16px; color:#1565c0; }
+  .modal-box label { font-size:13px; font-weight:600; display:block; margin-bottom:5px; color:#444; }
+  .modal-box textarea { width:100%; padding:9px 12px; border:1px solid #ccc; border-radius:6px; font-size:14px; resize:vertical; min-height:80px; }
+  .modal-box textarea:focus { outline:none; border-color:#1565c0; }
+  /* Event banner */
+  .event-banner { border-radius:8px; padding:12px 18px; margin-bottom:16px; font-size:14px; font-weight:600; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+  .event-banner.holiday       { background:#fff8e1; color:#f57f17; border-left:4px solid #f9a825; }
+  .event-banner.academic_trip { background:#e8f5e9; color:#2e7d32; border-left:4px solid #43a047; }
+  @media (max-width: 768px) {
+    .att-checkbox-label { width: 26px; height: 26px; border-radius: 5px; }
+    .att-checkbox-label i { font-size: 13px; }
+  }
+</style>
+
+<div class="max-w-7xl mx-auto">
+  <!-- Header -->
+  <div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-900 mb-1">
+      <i class="fas fa-clipboard-list text-blue-900"></i> Attendance Capture
+    </h2>
+    <p class="text-sm text-gray-600">{{ dept_name }} Department</p>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+    <h3 class="font-bold text-blue-900 text-sm mb-4 pb-3 border-b border-gray-200">
+      <i class="fas fa-filter"></i> Select Class, Unit &amp; Session
+    </h3>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div>
+        <label class="block text-xs font-bold text-gray-700 mb-2">Class</label>
+        <select id="classSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" onchange="onFilterChange()">
+          <option value="">-- Choose Class --</option>
+          {% for c in class_list %}
+            <option value="{{ c.id }}" {% if class_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-700 mb-2">Unit</label>
+        <select id="unitSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" onchange="onFilterChange()">
+          <option value="">-- Choose Unit --</option>
+          {% for u in units_list %}
+            <option value="{{ u.units.id }}" {% if unit_id == u.units.id %}selected{% endif %}>{{ u.units.code }} — {{ u.units.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-700 mb-2">Week</label>
+        <select id="weekSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" onchange="onFilterChange()">
+          <option value="">-- Week --</option>
+          {% for w in range(1, 53) %}
+            <option value="{{ w }}" {% if week == w %}selected{% endif %}>Week {{ w }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-700 mb-2">Lesson</label>
+        <select id="lessonSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" onchange="onFilterChange()">
+          <option value="">-- Lesson --</option>
+          {% for l in ['L1','L2','L3','L4'] %}
+            <option value="{{ l }}" {% if lesson == l %}selected{% endif %}>{{ l }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-700 mb-2">Year</label>
+        <select id="yearSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" onchange="onFilterChange()">
+          {% for y in range(2026, 2036) %}
+            <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-700 mb-2">Term</label>
+        <select id="termSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" onchange="onFilterChange()">
+          <option value="1" {% if term == 1 %}selected{% endif %}>Term 1</option>
+          <option value="2" {% if term == 2 %}selected{% endif %}>Term 2</option>
+          <option value="3" {% if term == 3 %}selected{% endif %}>Term 3</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Student list -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <!-- Card header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50">
+      <span class="font-bold text-blue-900">
+        <i class="fas fa-users"></i> Student List
+      </span>
+      {% if students_list %}
+      <span class="text-xs font-bold text-blue-900 bg-blue-100 px-3 py-1 rounded-full">
+        {{ students_list|length }} student(s)
+      </span>
+      {% endif %}
+    </div>
+
+    <div id="attMsg" class="att-msg"></div>
+
+    {% if active_event %}
+    <div class="event-banner {{ active_event.event_type }} mx-6 mt-4">
+      <span>
+        <i class="fas fa-{% if active_event.event_type == 'holiday' %}umbrella-beach{% else %}bus{% endif %}"></i>
+        <strong>{% if active_event.event_type == 'holiday' %}Holiday{% else %}Academic Trip{% endif %}</strong>
+        — Week {{ active_event.week }} {{ active_event.lesson }}
+        {% if active_event.note %} — {{ active_event.note }}{% endif %}
+      </span>
+      <form method="post" action="/lecturer/delete-event" style="display:inline;" onsubmit="return confirm('Remove this event record?');">
+        <input type="hidden" name="event_id" value="{{ active_event.id }}">
+        <input type="hidden" name="class_id" value="{{ class_id }}">
+        <input type="hidden" name="unit_id"  value="{{ unit_id }}">
+        <input type="hidden" name="week"     value="{{ active_event.week }}">
+        <input type="hidden" name="lesson"   value="{{ active_event.lesson }}">
+        <input type="hidden" name="year"     value="{{ year }}">
+        <input type="hidden" name="term"     value="{{ term }}">
+        <button type="submit" class="text-xs bg-white/30 hover:bg-white/50 text-inherit px-2 py-1 rounded transition">
+          <i class="fas fa-times"></i> Remove
+        </button>
+      </form>
+    </div>
+    {% endif %}
+
+    {% if not students_list %}
+    <div class="text-center py-12 text-gray-400">
+      <i class="fas fa-users text-4xl mb-4 block opacity-30"></i>
+      Select a class above to load students.
+    </div>
+    {% else %}
+    <!-- Table -->
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-blue-800 text-white">
+            <th class="px-4 py-3 text-left font-bold">#</th>
+            <th class="px-4 py-3 text-left font-bold">Adm No.</th>
+            <th class="px-4 py-3 text-left font-bold">Student Name</th>
+            <th class="px-4 py-3 text-center font-bold">Present</th>
+            <th class="px-4 py-3 text-center font-bold">Absent</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for s in students_list %}
+          <tr class="hover:bg-blue-50 transition">
+            <td class="px-4 py-3 text-gray-400">{{ loop.index }}</td>
+            <td class="px-4 py-3 font-bold text-gray-900">{{ s.admission_number }}</td>
+            <td class="px-4 py-3 text-gray-900">{{ s.full_name }}</td>
+            <td class="px-4 py-3 text-center" onclick="toggleCheckbox({{ s.id }}, 'present')">
+              <div class="att-checkbox-wrap present" style="justify-content:center;">
+                <input type="checkbox" id="present_{{ s.id }}" data-student-id="{{ s.id }}">
+                <label class="att-checkbox-label" for="present_{{ s.id }}"><i class="fas fa-check"></i></label>
+              </div>
+            </td>
+            <td class="px-4 py-3 text-center" onclick="toggleCheckbox({{ s.id }}, 'absent')">
+              <div class="att-checkbox-wrap absent" style="justify-content:center;">
+                <input type="checkbox" id="absent_{{ s.id }}" data-student-id="{{ s.id }}" checked>
+                <label class="att-checkbox-label" for="absent_{{ s.id }}"><i class="fas fa-times"></i></label>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    <!-- Action buttons -->
+    <div class="flex flex-wrap items-center justify-center gap-3 p-6 border-t border-gray-100 bg-gray-50">
+      <button type="button" onclick="viewAttendance()" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded-lg transition">
+        <i class="fas fa-eye"></i> View Attendance
+      </button>
+      <button id="submitBtn" class="bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded-lg transition"
+        {% if attendance_submitted %}disabled style="opacity:0.5;cursor:not-allowed;"{% endif %}>
+        <i class="fas fa-{% if attendance_submitted %}check{% else %}paper-plane{% endif %}"></i>
+        {% if attendance_submitted %}Already Submitted{% else %}Submit Attendance{% endif %}
+      </button>
+      <button type="button" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg transition" onclick="openEventModal('holiday')">
+        <i class="fas fa-umbrella-beach"></i> Mark Holiday
+      </button>
+      <button type="button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition" onclick="openEventModal('academic_trip')">
+        <i class="fas fa-bus"></i> Mark Academic Trip
+      </button>
+      <div id="loadingSpinner" class="loading-spinner"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Event Modal -->
+<div class="modal-overlay" id="eventModal">
+  <div class="modal-box">
+    <h3 id="modalTitle"><i class="fas fa-umbrella-beach"></i> Mark Holiday</h3>
+    <form id="eventForm">
+      <input type="hidden" id="evEventType" name="event_type" value="holiday">
+      <input type="hidden" id="evClassId"   name="class_id"   value="">
+      <input type="hidden" id="evUnitId"    name="unit_id"    value="">
+      <input type="hidden" id="evWeek"      name="week"       value="">
+      <input type="hidden" id="evLesson"    name="lesson"     value="">
+      <input type="hidden" id="evYear"      name="year"       value="">
+      <input type="hidden" id="evTerm"      name="term"       value="">
+      <div style="margin-bottom:14px;">
+        <label>Note <span style="font-weight:400;color:#888;">(optional)</span></label>
+        <textarea id="evNote" name="note" placeholder="e.g. Mid-term holiday, Science museum trip..."></textarea>
+      </div>
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px;">
+        <button type="button" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-bold hover:bg-gray-300 transition" onclick="closeEventModal()">Cancel</button>
+        <button type="submit" id="evSubmitBtn" class="px-4 py-2 rounded-lg bg-blue-700 text-white font-bold hover:bg-blue-800 transition">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  var studentIds = [{% for s in students_list %}{{ s.id }}{% if not loop.last %},{% endif %}{% endfor %}];
+
+  function toggleCheckbox(id, type) {
+    var p = document.getElementById('present_' + id);
+    var a = document.getElementById('absent_' + id);
+    if (type === 'present') {
+      p.checked = true;
+      a.checked = false;
+    } else {
+      a.checked = true;
+      p.checked = false;
+    }
+  }
+
+  function viewAttendance() {
+    var c = document.getElementById('classSelect').value;
+    var u = document.getElementById('unitSelect').value;
+    var w = document.getElementById('weekSelect').value;
+    var l = document.getElementById('lessonSelect').value;
+    if (!c || !u || !w || !l) { alert('Please select Class, Unit, Week and Lesson first.'); return; }
+    window.location = '/lecturer/view-attendance?class_id=' + c + '&unit_id=' + u +
+      '&week=' + w + '&lesson=' + encodeURIComponent(l) +
+      '&year=' + document.getElementById('yearSelect').value +
+      '&term=' + document.getElementById('termSelect').value;
+  }
+
+  // Event modal
+  function openEventModal(type) {
+    var c = document.getElementById('classSelect').value;
+    var w = document.getElementById('weekSelect').value;
+    var l = document.getElementById('lessonSelect').value;
+    if (!c || !w || !l) { alert('Please select Class, Week and Lesson first.'); return; }
+    document.getElementById('evEventType').value = type;
+    document.getElementById('evClassId').value   = c;
+    document.getElementById('evUnitId').value    = document.getElementById('unitSelect').value;
+    document.getElementById('evWeek').value      = w;
+    document.getElementById('evLesson').value    = l;
+    document.getElementById('evYear').value      = document.getElementById('yearSelect').value;
+    document.getElementById('evTerm').value      = document.getElementById('termSelect').value;
+    document.getElementById('evNote').value      = '';
+    var isHoliday = type === 'holiday';
+    document.getElementById('modalTitle').innerHTML =
+      '<i class="fas fa-' + (isHoliday ? 'umbrella-beach' : 'bus') + '"></i> ' +
+      (isHoliday ? 'Mark Holiday' : 'Mark Academic Trip');
+    document.getElementById('evSubmitBtn').style.background = isHoliday ? '#f9a825' : '#43a047';
+    document.getElementById('eventModal').classList.add('open');
+  }
+
+  function closeEventModal() {
+    document.getElementById('eventModal').classList.remove('open');
+  }
+
+  document.getElementById('eventModal').addEventListener('click', function(e) {
+    if (e.target === this) closeEventModal();
+  });
+
+  document.getElementById('eventForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var form = new FormData(this);
+    var btn = document.getElementById('evSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Saving...';
+    fetch('/lecturer/mark-event', { method: 'POST', body: form })
+      .then(r => r.json())
+      .then(resp => {
+        btn.disabled = false; btn.textContent = 'Save';
+        closeEventModal();
+        if (resp.success) {
+          window.location.reload();
+        } else {
+          alert(resp.message || 'Error saving event.');
+        }
+      })
+      .catch(() => { btn.disabled = false; btn.textContent = 'Save'; alert('Network error.'); });
+  });
+
+  // Submit attendance
+  document.getElementById('submitBtn').addEventListener('click', function () {
+    var classId  = document.getElementById('classSelect').value;
+    var unitId   = document.getElementById('unitSelect').value;
+    var week     = document.getElementById('weekSelect').value;
+    var lesson   = document.getElementById('lessonSelect').value;
+    var yearVal  = document.getElementById('yearSelect').value;
+    var termVal  = document.getElementById('termSelect').value;
+    var msg      = document.getElementById('attMsg');
+    var spinner  = document.getElementById('loadingSpinner');
+
+    function showMsg(text, type) {
+      msg.textContent = text; msg.className = 'att-msg ' + type; msg.style.display = 'block';
+    }
+
+    if (!classId || !unitId || !week || !lesson) {
+      showMsg('Please select Class, Unit, Week and Lesson.', 'error'); return;
+    }
+    var form = new FormData();
+    form.append('class_id', classId); form.append('unit_id', unitId);
+    form.append('week', week); form.append('lesson', lesson);
+    form.append('year', yearVal); form.append('term', termVal);
+    var any = false;
+    studentIds.forEach(function (sid) {
+      var p = document.getElementById('present_' + sid);
+      var a = document.getElementById('absent_' + sid);
+      if (p && p.checked)      { form.append('status[' + sid + ']', 'present'); any = true; }
+      else if (a && a.checked) { form.append('status[' + sid + ']', 'absent');  any = true; }
+    });
+    if (!any) { showMsg('No attendance recorded.', 'error'); return; }
+    spinner.style.display = 'block';
+    fetch('/lecturer/submit-attendance', { method: 'POST', body: form })
+      .then(r => r.json().catch(() => ({ success: false, message: 'Invalid response' })))
+      .then(resp => {
+        spinner.style.display = 'none';
+        showMsg(resp.message || (resp.success ? 'Saved!' : 'Error'), resp.success ? 'success' : 'error');
+      })
+      .catch(() => { spinner.style.display = 'none'; showMsg('Network error', 'error'); });
+  });
+
+  function onFilterChange() {
+    var params = new URLSearchParams();
+    var c = document.getElementById('classSelect').value;
+    var u = document.getElementById('unitSelect').value;
+    var w = document.getElementById('weekSelect').value;
+    var l = document.getElementById('lessonSelect').value;
+    var y = document.getElementById('yearSelect').value;
+    var t = document.getElementById('termSelect').value;
+    if (c) params.set('class_id', c);
+    if (u) params.set('unit_id', u);
+    if (w) params.set('week', w);
+    if (l) params.set('lesson', l);
+    if (y) params.set('year', y);
+    if (t) params.set('term', t);
+    window.location = '/lecturer/dashboard?' + params.toString();
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends 'base_tailwind.html' %}
+
+{# Portfolio pages reuse the role-appropriate sidebar nav #}
+{% block sidebar_nav %}
+{% set role = current_user.role if current_user else '' %}
+{% if role == 'super_admin' %}
+  {% include 'includes/nav/super_admin.html' ignore missing %}
+  {% if not self.sidebar_nav() %}
+    <div class="menu-section">Portfolio</div>
+    <a href="/portfolio/super-admin/dashboard" class="sidebar-link"><i class="fas fa-file-alt w-5 text-center"></i> Portfolio Overview</a>
+    <div class="menu-section">System</div>
+    <a href="/super-admin/welcome" class="sidebar-link"><i class="fas fa-tachometer-alt w-5 text-center"></i> Main Dashboard</a>
+  {% endif %}
+{% elif role == 'dept_admin' %}
+  <div class="menu-section">Portfolio</div>
+  <a href="/portfolio/dept-admin/dashboard" class="sidebar-link"><i class="fas fa-file-alt w-5 text-center"></i> Portfolio Overview</a>
+  <div class="menu-section">Management</div>
+  <a href="/dept-admin/welcome" class="sidebar-link"><i class="fas fa-tachometer-alt w-5 text-center"></i> Main Dashboard</a>
+  <a href="/dept-admin/classes" class="sidebar-link"><i class="fas fa-door-open w-5 text-center"></i> Classes</a>
+  <a href="/dept-admin/students" class="sidebar-link"><i class="fas fa-user-graduate w-5 text-center"></i> Students</a>
+{% elif role == 'trainer' %}
+  <div class="menu-section">Portfolio</div>
+  <a href="/portfolio/trainer/dashboard" class="sidebar-link"><i class="fas fa-file-alt w-5 text-center"></i> Review Queue</a>
+  <div class="menu-section">Attendance</div>
+  <a href="/lecturer/dashboard" class="sidebar-link"><i class="fas fa-tachometer-alt w-5 text-center"></i> Main Dashboard</a>
+  <a href="/lecturer/class-report" class="sidebar-link"><i class="fas fa-chart-bar w-5 text-center"></i> Class Report</a>
+{% else %}
+  <div class="menu-section">My Portfolio</div>
+  <a href="/portfolio/dashboard" class="sidebar-link"><i class="fas fa-th-large w-5 text-center"></i> My Submissions</a>
+  <a href="/portfolio/upload" class="sidebar-link"><i class="fas fa-cloud-upload-alt w-5 text-center"></i> Upload Assessment</a>
+  <div class="menu-section">My Account</div>
+  <a href="/student/dashboard" class="sidebar-link"><i class="fas fa-tachometer-alt w-5 text-center"></i> Attendance Dashboard</a>
+  <a href="/results/my-results" class="sidebar-link"><i class="fas fa-chart-bar w-5 text-center"></i> My Results</a>
+  <a href="/exam/my-bookings" class="sidebar-link"><i class="fas fa-book-open w-5 text-center"></i> Exam Bookings</a>
+  <a href="/clearance/my-clearance" class="sidebar-link"><i class="fas fa-certificate w-5 text-center"></i> Clearance</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+  {% block portfolio_content %}{% endblock %}
+</div>
+{% endblock %}

@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}TTTTI{% endblock %} | Thika Technical Training Institute</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary:   { DEFAULT: '#1565c0', dark: '#0d47a1', light: '#1976d2' },
+            secondary: { DEFAULT: '#ffd700', dark: '#f9a825' },
+            success:   '#2e7d32',
+            danger:    '#c62828',
+            warning:   '#f57f17',
+          },
+          fontFamily: {
+            sans: ['Poppins', 'Segoe UI', 'Arial', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Poppins', 'Segoe UI', Arial, sans-serif; }
+
+    /* ── Sidebar links ── */
+    .sidebar-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: 8px;
+      font-size: 0.85rem; font-weight: 500;
+      color: rgba(255,255,255,0.78);
+      border-left: 3px solid transparent;
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+    .sidebar-link:hover {
+      background: rgba(255,255,255,0.10);
+      color: #fff;
+      text-decoration: none;
+    }
+    .sidebar-link.active {
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      border-left-color: #ffd700;
+      padding-left: 11px;
+    }
+    .menu-section {
+      padding: 14px 14px 4px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(255,255,255,0.38);
+    }
+
+    /* ── Notification dot ── */
+    .notif-dot {
+      position: absolute; top: -4px; right: -4px;
+      width: 18px; height: 18px;
+      background: #e53935; color: #fff;
+      font-size: 0.6rem; font-weight: 800;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── Flash messages ── */
+    .flash-success { background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; padding:12px 16px; border-radius:10px; margin-bottom:12px; display:flex; align-items:center; gap:10px; font-size:0.875rem; }
+    .flash-error   { background:#ffebee; border:1px solid #ef9a9a; color:#c62828; padding:12px 16px; border-radius:10px; margin-bottom:12px; display:flex; align-items:center; gap:10px; font-size:0.875rem; }
+    .flash-warning { background:#fff8e1; border:1px solid #ffe082; color:#f57f17; padding:12px 16px; border-radius:10px; margin-bottom:12px; display:flex; align-items:center; gap:10px; font-size:0.875rem; }
+    .flash-info    { background:#e3f2fd; border:1px solid #90caf9; color:#1565c0; padding:12px 16px; border-radius:10px; margin-bottom:12px; display:flex; align-items:center; gap:10px; font-size:0.875rem; }
+
+    /* ── Cards ── */
+    .card { background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.07); border:1px solid #f0f0f0; padding:24px; }
+
+    /* ── Buttons ── */
+    .btn-primary { background:#1565c0; color:#fff; padding:8px 18px; border-radius:8px; font-size:0.875rem; font-weight:600; transition:background 0.15s; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; text-decoration:none; }
+    .btn-primary:hover { background:#0d47a1; color:#fff; text-decoration:none; }
+    .btn-success { background:#2e7d32; color:#fff; padding:8px 18px; border-radius:8px; font-size:0.875rem; font-weight:600; transition:background 0.15s; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; text-decoration:none; }
+    .btn-success:hover { background:#1b5e20; color:#fff; text-decoration:none; }
+    .btn-danger  { background:#c62828; color:#fff; padding:8px 18px; border-radius:8px; font-size:0.875rem; font-weight:600; transition:background 0.15s; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; text-decoration:none; }
+    .btn-danger:hover  { background:#b71c1c; color:#fff; text-decoration:none; }
+    .btn-warning { background:#f57f17; color:#fff; padding:8px 18px; border-radius:8px; font-size:0.875rem; font-weight:600; transition:background 0.15s; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; text-decoration:none; }
+    .btn-warning:hover { background:#e65100; color:#fff; text-decoration:none; }
+    .btn-ghost   { background:#f1f5f9; color:#475569; padding:8px 18px; border-radius:8px; font-size:0.875rem; font-weight:600; transition:background 0.15s; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; text-decoration:none; }
+    .btn-ghost:hover { background:#e2e8f0; color:#1e293b; text-decoration:none; }
+    .btn-sm { padding:5px 12px; font-size:0.8rem; }
+
+    /* ── Form inputs ── */
+    .form-input  { width:100%; border:1.5px solid #d1d5db; border-radius:8px; padding:9px 12px; font-size:0.875rem; transition:border-color 0.15s, box-shadow 0.15s; background:#fff; }
+    .form-input:focus { outline:none; border-color:#1565c0; box-shadow:0 0 0 3px rgba(21,101,192,0.12); }
+    .form-label  { display:block; font-size:0.8rem; font-weight:600; color:#374151; margin-bottom:5px; }
+
+    /* ── Badges ── */
+    .badge-pending  { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:999px; font-size:0.7rem; font-weight:700; background:#fef9c3; color:#854d0e; border:1px solid #fde047; }
+    .badge-approved { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:999px; font-size:0.7rem; font-weight:700; background:#d1fae5; color:#065f46; border:1px solid #6ee7b7; }
+    .badge-rejected { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:999px; font-size:0.7rem; font-weight:700; background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
+    .badge-info     { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:999px; font-size:0.7rem; font-weight:700; background:#dbeafe; color:#1e40af; border:1px solid #93c5fd; }
+
+    /* ── Tables ── */
+    .table-th { padding:10px 14px; text-align:left; font-size:0.72rem; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:0.04em; white-space:nowrap; }
+    .table-td { padding:10px 14px; font-size:0.875rem; color:#374151; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+    .table-tr:hover { background:#f8fafc; }
+
+    /* ── Sidebar stat widget ── */
+    .sidebar-stat { background:rgba(255,255,255,0.10); border-radius:10px; padding:10px 14px; display:flex; align-items:center; justify-content:space-between; }
+    .sidebar-stat-val { font-size:1.4rem; font-weight:800; line-height:1; }
+    .sidebar-stat-lbl { font-size:0.62rem; font-weight:700; text-transform:uppercase; opacity:0.65; margin-top:2px; }
+
+    /* ── Mobile sidebar ── */
+    #sidebarOverlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:40; }
+    #sidebarOverlay.open { display:block; }
+    #sidebar { transition:transform 0.25s ease; }
+    @media (max-width:1023px) {
+      #sidebar { position:fixed; top:0; left:0; height:100vh; z-index:50; transform:translateX(-100%); }
+      #sidebar.open { transform:translateX(0); }
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<div class="flex h-screen overflow-hidden">
+
+  <!-- ══ SIDEBAR ══ -->
+  <aside id="sidebar" class="w-64 flex-shrink-0 bg-gradient-to-b from-blue-800 to-blue-900 flex flex-col shadow-xl z-30">
+
+    <!-- Logo / Brand -->
+    <div class="p-4 border-b border-white/10">
+      {% set size = 'sm' %}
+      {% set text_class = 'text-white' %}
+      {% include 'includes/brand_header.html' %}
+    </div>
+
+    <!-- User info -->
+    {% if current_user %}
+    <div class="px-4 py-3 border-b border-white/10">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0 text-sm font-bold text-white">
+          {{ (current_user.name or 'U')[0] | upper }}
+        </div>
+        <div class="overflow-hidden">
+          <p class="font-bold text-sm text-white truncate leading-tight">{{ current_user.name }}</p>
+          <span class="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full capitalize">
+            {{ (current_user.role or '') | replace('_',' ') }}
+          </span>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Navigation -->
+    <nav class="flex-1 overflow-y-auto py-2 px-2">
+      {% block sidebar_nav %}{% endblock %}
+    </nav>
+
+    <!-- Sidebar footer -->
+    <div class="p-3 border-t border-white/10 space-y-0.5">
+      <a href="/notifications/" class="sidebar-link">
+        <i class="fas fa-bell w-5 text-center"></i>
+        Notifications
+        {% if unread_notifs and unread_notifs > 0 %}
+        <span class="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ unread_notifs }}</span>
+        {% endif %}
+      </a>
+      <a href="/auth/logout" class="sidebar-link text-red-300 hover:text-white hover:bg-red-600/30">
+        <i class="fas fa-sign-out-alt w-5 text-center"></i> Logout
+      </a>
+    </div>
+  </aside>
+
+  <!-- ══ MAIN CONTENT ══ -->
+  <div class="flex-1 flex flex-col overflow-hidden min-w-0">
+
+    <!-- Topbar -->
+    <header class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm z-20 flex-shrink-0">
+      <div class="flex items-center gap-3">
+        <!-- Mobile hamburger -->
+        <button id="sidebarToggle" class="lg:hidden text-gray-500 hover:text-gray-700 p-1">
+          <i class="fas fa-bars text-lg"></i>
+        </button>
+        <div>
+          <h1 class="text-base font-semibold text-gray-800 leading-tight">{% block page_title %}Dashboard{% endblock %}</h1>
+          <p class="text-xs text-gray-400">{% block page_subtitle %}{% endblock %}</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 flex-shrink-0">
+        <!-- Notification Bell -->
+        {% if current_user %}
+        <div class="relative" id="notifBell">
+          <button onclick="toggleNotifDropdown()" class="relative p-2 text-gray-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors">
+            <i class="fas fa-bell text-lg"></i>
+            {% if unread_notifs and unread_notifs > 0 %}
+            <span class="notif-dot">{{ unread_notifs if unread_notifs < 10 else '9+' }}</span>
+            {% endif %}
+          </button>
+          <!-- Notification Dropdown -->
+          <div id="notifDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 z-50">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <span class="font-semibold text-gray-800 text-sm">Notifications</span>
+              <button onclick="markAllRead()" class="text-xs text-blue-600 hover:underline">Mark all read</button>
+            </div>
+            <div id="notifList" class="max-h-72 overflow-y-auto divide-y divide-gray-50">
+              <div class="px-4 py-6 text-center text-gray-400 text-sm">Loading...</div>
+            </div>
+            <div class="px-4 py-2 border-t border-gray-100 text-center">
+              <a href="/notifications/" class="text-xs text-blue-600 hover:underline">View all notifications</a>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- User avatar -->
+        {% if current_user %}
+        <div class="flex items-center gap-2 text-sm text-gray-600">
+          <div class="w-8 h-8 bg-blue-700 rounded-full flex items-center justify-center text-white font-bold text-xs">
+            {{ (current_user.name or 'U')[0] | upper }}
+          </div>
+          <span class="hidden sm:block font-medium text-sm">{{ current_user.name }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </header>
+
+    <!-- Flash messages -->
+    <div class="px-6 pt-4 flex-shrink-0">
+      {% include 'includes/flash_messages.html' %}
+    </div>
+
+    <!-- Page content -->
+    <main class="flex-1 overflow-y-auto p-6">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+<!-- Mobile sidebar overlay -->
+<div id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<script>
+  // ── Sidebar toggle (mobile) ──────────────────────────────
+  const sidebar  = document.getElementById('sidebar');
+  const overlay  = document.getElementById('sidebarOverlay');
+  const toggle   = document.getElementById('sidebarToggle');
+
+  function openSidebar()  { sidebar.classList.add('open');  overlay.classList.add('open'); }
+  function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('open'); }
+
+  if (toggle) toggle.addEventListener('click', openSidebar);
+
+  // ── Active sidebar link ──────────────────────────────────
+  document.querySelectorAll('.sidebar-link').forEach(a => {
+    const href = a.getAttribute('href');
+    if (href && href !== '#' && window.location.pathname.startsWith(href)) {
+      a.classList.add('active');
+    }
+  });
+
+  // ── Notification dropdown ────────────────────────────────
+  function toggleNotifDropdown() {
+    const dd = document.getElementById('notifDropdown');
+    dd.classList.toggle('hidden');
+    if (!dd.classList.contains('hidden')) loadNotifications();
+  }
+
+  document.addEventListener('click', function(e) {
+    const bell = document.getElementById('notifBell');
+    if (bell && !bell.contains(e.target)) {
+      document.getElementById('notifDropdown')?.classList.add('hidden');
+    }
+  });
+
+  function loadNotifications() {
+    fetch('/notifications/api/recent')
+      .then(r => r.json())
+      .then(data => {
+        const list = document.getElementById('notifList');
+        if (!data.length) {
+          list.innerHTML = '<div class="px-4 py-6 text-center text-gray-400 text-sm">No notifications</div>';
+          return;
+        }
+        list.innerHTML = data.map(n => `
+          <div class="px-4 py-3 hover:bg-gray-50 cursor-pointer ${n.is_read ? '' : 'bg-blue-50/50'}"
+               onclick="markRead(${n.id}, this)">
+            <div class="flex items-start gap-2">
+              <span class="mt-1 w-2 h-2 rounded-full flex-shrink-0 ${n.is_read ? 'bg-gray-300' : 'bg-blue-500'}"></span>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-semibold text-gray-800 truncate">${n.title}</p>
+                <p class="text-xs text-gray-500 mt-0.5 line-clamp-2">${n.message}</p>
+                <p class="text-xs text-gray-400 mt-1">${new Date(n.created_at).toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      })
+      .catch(() => {});
+  }
+
+  function markRead(id, el) {
+    fetch(`/notifications/mark-read/${id}`, { method: 'POST' })
+      .then(() => {
+        el.classList.remove('bg-blue-50/50');
+        el.querySelector('span')?.classList.replace('bg-blue-500', 'bg-gray-300');
+      });
+  }
+
+  function markAllRead() {
+    fetch('/notifications/mark-all-read', { method: 'POST' })
+      .then(() => {
+        document.querySelectorAll('#notifList .bg-blue-50\\/50').forEach(el => el.classList.remove('bg-blue-50/50'));
+        document.querySelector('.notif-dot')?.remove();
+      });
+  }
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

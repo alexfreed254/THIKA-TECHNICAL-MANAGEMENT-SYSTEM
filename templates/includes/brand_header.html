@@ -1,0 +1,18 @@
+{# Institute logo + official title. Pass size: sm | md | lg, optional center, text_class #}
+{% set logo_size = size|default('md') %}
+{% set logo_class = {'sm': 'w-10 h-10', 'md': 'w-16 h-16', 'lg': 'w-24 h-24'}[logo_size] %}
+{% set title_class = {'sm': 'text-[0.5rem] leading-tight', 'md': 'text-[0.65rem] sm:text-xs leading-snug', 'lg': 'text-xs sm:text-sm md:text-base leading-snug'}[logo_size] %}
+
+<div class="flex items-center gap-3 {% if center %}justify-center text-center flex-col sm:flex-row{% endif %}">
+  <img
+    src="{{ url_for('static', filename='images/thika-logo.jpg') }}"
+    alt="Thika Technical Training Institute Logo"
+    class="{{ logo_class }} object-contain flex-shrink-0 rounded-xl bg-white/90 p-1 shadow-sm"
+  >
+  <div class="{% if center %}text-center sm:text-left{% endif %} min-w-0">
+    <p class="{{ title_class }} font-extrabold uppercase tracking-wide leading-snug {{ text_class|default('text-inherit') }}">
+      THIKA TECHNICAL TRAINING INSTITUTE<br>
+      <span class="opacity-80">MANAGEMENT SYSTEM</span>
+    </p>
+  </div>
+</div>

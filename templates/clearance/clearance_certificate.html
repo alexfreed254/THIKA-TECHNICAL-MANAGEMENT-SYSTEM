@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Clearance Certificate — {{ student.admission_number }}</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: 'Times New Roman', serif; font-size: 12px; color: #000; background: #fff; }
+    .page { width: 210mm; min-height: 297mm; padding: 20mm; margin: 0 auto; position: relative; }
+    .border-outer { border: 4px double #1565c0; padding: 15px; min-height: 257mm; }
+    .border-inner { border: 1px solid #1565c0; padding: 20px; min-height: 247mm; }
+    .header { text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #1565c0; }
+    .header img { height: 70px; }
+    .header h1 { font-size: 18px; font-weight: bold; color: #1565c0; margin-top: 8px; text-transform: uppercase; }
+    .header h2 { font-size: 14px; color: #333; margin-top: 4px; }
+    .cert-title { text-align: center; font-size: 20px; font-weight: bold; color: #1565c0;
+                  text-transform: uppercase; letter-spacing: 3px; margin: 20px 0; padding: 10px;
+                  border-top: 2px solid #1565c0; border-bottom: 2px solid #1565c0; }
+    .cert-body { text-align: center; font-size: 13px; line-height: 1.8; margin: 20px 0; }
+    .student-name { font-size: 22px; font-weight: bold; color: #1565c0; border-bottom: 2px solid #1565c0;
+                    display: inline-block; padding: 0 20px; margin: 10px 0; }
+    .details-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    .details-table td { padding: 8px 12px; border: 1px solid #ddd; font-size: 12px; }
+    .details-table td:first-child { font-weight: bold; background: #f5f8ff; width: 40%; }
+    .clearance-stages { margin: 20px 0; }
+    .stage-row { display: flex; align-items: center; justify-content: space-between;
+                 padding: 8px 12px; border-bottom: 1px solid #eee; }
+    .stage-row:last-child { border-bottom: none; }
+    .stage-label { font-weight: bold; font-size: 12px; }
+    .stage-cleared { color: #2e7d32; font-size: 11px; }
+    .sig-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; }
+    .sig-box { text-align: center; }
+    .sig-line { border-top: 1px solid #000; margin-top: 40px; padding-top: 5px; font-size: 11px; }
+    .stamp-area { width: 100px; height: 100px; border: 2px dashed #ccc; border-radius: 50%;
+                  margin: 10px auto; display: flex; align-items: center; justify-content: center;
+                  font-size: 10px; color: #999; }
+    .footer { text-align: center; margin-top: 30px; font-size: 10px; color: #666;
+              border-top: 1px solid #ccc; padding-top: 10px; }
+    @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="border-outer">
+    <div class="border-inner">
+      <div class="header">
+        <img src="/static/assets/THIKATTILOGO.jpg" alt="Logo">
+        <h1>Thika Technical Training Institute</h1>
+        <h2>P.O. Box 93 — 01000, Thika | Tel: +254 67 22XXX</h2>
+      </div>
+
+      <div class="cert-title">Certificate of Clearance</div>
+
+      <div class="cert-body">
+        <p>This is to certify that</p>
+        <div class="student-name">{{ student.full_name }}</div>
+        <p style="margin-top:10px;">
+          Admission Number: <strong>{{ student.admission_number }}</strong><br>
+          has been duly cleared by all relevant departments of<br>
+          <strong>Thika Technical Training Institute</strong><br>
+          and is hereby granted this Certificate of Clearance.
+        </p>
+      </div>
+
+      <table class="details-table">
+        <tr><td>Full Name</td><td>{{ student.full_name }}</td></tr>
+        <tr><td>Admission Number</td><td>{{ student.admission_number }}</td></tr>
+        <tr><td>Department</td><td>{{ ((student.classes or {}).get('departments') or {}).get('name','—') }}</td></tr>
+        <tr><td>Class</td><td>{{ (student.classes or {}).get('name','—') }}</td></tr>
+        <tr><td>Date of Clearance</td><td>{{ cr.completed_at | to_eat if cr.completed_at else generated }}</td></tr>
+      </table>
+
+      <div class="clearance-stages">
+        <p style="font-weight:bold; margin-bottom:8px; font-size:12px;">Clearance Stages:</p>
+        <div class="stage-row">
+          <span class="stage-label">1. Department Clearance</span>
+          <span class="stage-cleared">✓ Cleared — {{ cr.dept_cleared_at | to_eat if cr.dept_cleared_at else '—' }}</span>
+        </div>
+        <div class="stage-row">
+          <span class="stage-label">2. Finance Clearance</span>
+          <span class="stage-cleared">✓ Cleared — {{ cr.finance_cleared_at | to_eat if cr.finance_cleared_at else '—' }}</span>
+        </div>
+        <div class="stage-row">
+          <span class="stage-label">3. Registrar Clearance</span>
+          <span class="stage-cleared">✓ Cleared — {{ cr.registrar_cleared_at | to_eat if cr.registrar_cleared_at else '—' }}</span>
+        </div>
+        <div class="stage-row">
+          <span class="stage-label">4. Principal / Deputy Principal Sign-off</span>
+          <span class="stage-cleared">✓ Signed — {{ cr.principal_signed_at | to_eat if cr.principal_signed_at else '—' }}</span>
+        </div>
+      </div>
+
+      <div class="sig-section">
+        <div class="sig-box">
+          <div class="stamp-area">{% if cr.stamp_applied %}OFFICIAL STAMP{% else %}Stamp{% endif %}</div>
+          <div class="sig-line">
+            <strong>{{ cr.principal_name or 'Principal / Deputy Principal' }}</strong><br>
+            Principal / Deputy Principal<br>
+            Thika Technical Training Institute
+          </div>
+        </div>
+        <div class="sig-box">
+          <div style="margin-top:40px; font-size:14px; font-style:italic; color:#1565c0;">
+            {{ cr.principal_signature or '' }}
+          </div>
+          <div class="sig-line">
+            Digital Signature<br>
+            Date: {{ cr.principal_signed_at | to_eat('%d %b %Y') if cr.principal_signed_at else generated }}
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        This certificate is valid only when bearing the official stamp and signature of the Principal/Deputy Principal.<br>
+        Generated: {{ generated }} | Ref: TTTTI/CLR/{{ cr.id }}/{{ student.admission_number }}
+      </div>
+    </div>
+  </div>
+</div>
+<script>window.onload = function() { window.print(); }</script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+{% extends "base_tailwind.html" %}
+{% block title %}Submit Logbook Entry{% endblock %}
+{% block page_title %}Submit Activity Log{% endblock %}
+
+{% block sidebar_nav %}
+<a href="/logbook/dashboard" class="sidebar-link"><i class="fas fa-tachometer-alt fa-fw"></i> Dashboard</a>
+<a href="/logbook/submit" class="sidebar-link"><i class="fas fa-plus-circle fa-fw"></i> Submit Entry</a>
+<a href="/logbook/my-logbook" class="sidebar-link"><i class="fas fa-book-open fa-fw"></i> My Logbook</a>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="card mb-4 bg-blue-50 border border-blue-200">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 bg-blue-700 rounded-full flex items-center justify-center text-white">
+        <i class="fas fa-building"></i>
+      </div>
+      <div>
+        <p class="font-semibold text-blue-800">{{ (placement.employers or {}).get('company_name', '—') }}</p>
+        <p class="text-xs text-blue-600">{{ student.full_name }} — {{ student.admission_number }}</p>
+      </div>
+    </div>
+  </div>
+
+  {% if error %}
+  <div class="flash-error mb-4"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>
+  {% endif %}
+
+  <div class="card">
+    <h3 class="font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200">
+      <i class="fas fa-pen mr-2 text-blue-600"></i>Activity Submission
+    </h3>
+
+    <form method="POST" id="logbookForm">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="form-label">Submission Slot <span class="text-red-500">*</span></label>
+          <select name="submission_slot" class="form-input" required>
+            <option value="">-- Select Time Slot --</option>
+            {% for s in submission_slots %}
+            <option value="{{ s }}" {% if slot == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Date</label>
+          <input type="date" name="submission_date" class="form-input"
+                 value="{{ today.isoformat() }}" max="{{ today.isoformat() }}" readonly>
+          <p class="text-xs text-gray-400 mt-1"><i class="fas fa-lock mr-1"></i>Backdating is not allowed</p>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label">Activity Title <span class="text-red-500">*</span></label>
+        <input type="text" name="activity_title" class="form-input" required
+               placeholder="e.g. Electrical wiring installation in Block B">
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-input" rows="3"
+                  placeholder="Describe what you did in detail..."></textarea>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="form-label">Skills Gained</label>
+          <textarea name="skills_gained" class="form-input" rows="2"
+                    placeholder="e.g. Cable termination, safety procedures..."></textarea>
+        </div>
+        <div>
+          <label class="form-label">Tools / Materials Used</label>
+          <textarea name="tools_materials" class="form-input" rows="2"
+                    placeholder="e.g. Multimeter, wire stripper, PVC conduit..."></textarea>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label">Challenges Faced</label>
+        <textarea name="challenges_faced" class="form-input" rows="2"
+                  placeholder="Any difficulties encountered and how you resolved them..."></textarea>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div>
+          <label class="form-label">Time Spent (hours)</label>
+          <input type="number" name="time_spent" class="form-input" min="0.5" max="2" step="0.5" value="2">
+        </div>
+        <div>
+          <label class="form-label">GPS Latitude</label>
+          <input type="number" name="gps_latitude" id="gpsLat" class="form-input" step="0.0000001" placeholder="-1.0332">
+        </div>
+        <div>
+          <label class="form-label">GPS Longitude</label>
+          <input type="number" name="gps_longitude" id="gpsLng" class="form-input" step="0.0000001" placeholder="37.0693">
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label">Location Name</label>
+        <div class="flex gap-2">
+          <input type="text" name="gps_location_name" id="gpsName" class="form-input"
+                 placeholder="e.g. Thika Industrial Area, Block B">
+          <button type="button" onclick="getLocation()" class="btn-ghost whitespace-nowrap text-xs">
+            <i class="fas fa-map-marker-alt mr-1"></i>Get GPS
+          </button>
+        </div>
+      </div>
+
+      <!-- Evidence Files -->
+      <div class="mb-6">
+        <label class="form-label">Evidence Files (Photos / Videos / PDFs)</label>
+        <p class="text-xs text-gray-500 mb-2">Paste Google Drive share links or direct URLs. Add multiple files.</p>
+        <div id="evidenceContainer">
+          <div class="flex gap-2 mb-2">
+            <input type="url" name="evidence_file_urls" class="form-input"
+                   placeholder="https://drive.google.com/file/d/... or direct URL">
+            <button type="button" onclick="addEvidenceField()" class="btn-ghost text-xs whitespace-nowrap">
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 mt-1">
+          <i class="fas fa-info-circle mr-1"></i>
+          Supported: Photos (JPG/PNG), Videos (MP4), PDFs, Google Drive links
+        </p>
+      </div>
+
+      <div class="flex gap-3 justify-end">
+        <a href="/logbook/dashboard" class="btn-ghost">Cancel</a>
+        <button type="submit" class="btn-primary">
+          <i class="fas fa-paper-plane mr-2"></i>Submit Entry
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function addEvidenceField() {
+  const container = document.getElementById('evidenceContainer');
+  const div = document.createElement('div');
+  div.className = 'flex gap-2 mb-2';
+  div.innerHTML = `
+    <input type="url" name="evidence_file_urls" class="form-input"
+           placeholder="https://drive.google.com/file/d/... or direct URL">
+    <button type="button" onclick="this.parentElement.remove()" class="btn-danger text-xs">
+      <i class="fas fa-times"></i>
+    </button>
+  `;
+  container.appendChild(div);
+}
+
+function getLocation() {
+  if (!navigator.geolocation) {
+    alert('Geolocation is not supported by your browser.');
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      document.getElementById('gpsLat').value = pos.coords.latitude.toFixed(7);
+      document.getElementById('gpsLng').value = pos.coords.longitude.toFixed(7);
+      document.getElementById('gpsName').value = `Lat: ${pos.coords.latitude.toFixed(4)}, Lng: ${pos.coords.longitude.toFixed(4)}`;
+    },
+    err => alert('Could not get location: ' + err.message)
+  );
+}
+</script>
+{% endblock %}

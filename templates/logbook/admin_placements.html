@@ -1,0 +1,135 @@
+{% extends "base_tailwind.html" %}
+{% block title %}Manage Placements{% endblock %}
+{% block page_title %}Industrial Attachment Placements{% endblock %}
+
+{% block sidebar_nav %}
+<div class="menu-section">Logbook</div>
+<a href="/logbook/trainer/monitoring" class="sidebar-link"><i class="fas fa-chart-line fa-fw"></i> Monitoring</a>
+<a href="/logbook/admin/placements" class="sidebar-link"><i class="fas fa-briefcase fa-fw"></i> Placements</a>
+<div class="menu-section">Dual Training</div>
+<a href="/dual-training/allocations" class="sidebar-link"><i class="fas fa-industry fa-fw"></i> Allocations</a>
+<a href="/dual-training/employers" class="sidebar-link"><i class="fas fa-building fa-fw"></i> Employers</a>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Create Form -->
+  <div class="lg:col-span-1">
+    <div class="card">
+      <h3 class="font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200">
+        <i class="fas fa-plus-circle mr-2 text-blue-600"></i>New Placement
+      </h3>
+      {% if error %}<div class="flash-error mb-3 text-xs"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>{% endif %}
+      <form method="POST">
+        <input type="hidden" name="action" value="create">
+        <div class="space-y-3">
+          <div>
+            <label class="form-label text-xs">Student <span class="text-red-500">*</span></label>
+            <select name="student_id" class="form-input text-xs" required>
+              <option value="">-- Select Student --</option>
+              {% for s in students %}
+              <option value="{{ s.id }}">{{ s.full_name }} ({{ s.admission_number }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="form-label text-xs">Employer <span class="text-red-500">*</span></label>
+            <select name="employer_id" class="form-input text-xs" required>
+              <option value="">-- Select Employer --</option>
+              {% for e in employers %}
+              <option value="{{ e.id }}">{{ e.company_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="form-label text-xs">Industry Supervisor</label>
+            <select name="supervisor_id" class="form-input text-xs">
+              <option value="">-- Select Supervisor --</option>
+              {% for s in supervisors %}
+              <option value="{{ s.id }}">{{ s.full_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="form-label text-xs">Trainer</label>
+            <select name="trainer_id" class="form-input text-xs">
+              <option value="">-- Select Trainer --</option>
+              {% for t in trainers %}
+              <option value="{{ t.id }}">{{ t.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="form-label text-xs">Start Date</label>
+              <input type="date" name="start_date" class="form-input text-xs">
+            </div>
+            <div>
+              <label class="form-label text-xs">End Date</label>
+              <input type="date" name="end_date" class="form-input text-xs">
+            </div>
+          </div>
+          <button type="submit" class="btn-primary w-full text-sm">
+            <i class="fas fa-plus mr-2"></i>Create Placement
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Placements List -->
+  <div class="lg:col-span-2">
+    <div class="card overflow-hidden p-0">
+      <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+        <h3 class="font-bold text-gray-800">Active Placements ({{ placements|length }})</h3>
+      </div>
+      {% if not placements %}
+      <div class="text-center py-12 text-gray-400">
+        <i class="fas fa-briefcase text-4xl mb-3"></i>
+        <p>No placements created yet.</p>
+      </div>
+      {% else %}
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-blue-700">
+              <th class="table-th">Student</th>
+              <th class="table-th">Employer</th>
+              <th class="table-th">Supervisor</th>
+              <th class="table-th">Period</th>
+              <th class="table-th">Status</th>
+              <th class="table-th">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in placements %}
+            <tr class="table-tr">
+              <td class="table-td">
+                <p class="font-medium">{{ (p.students or {}).get('full_name','—') }}</p>
+                <p class="text-xs text-gray-400">{{ (p.students or {}).get('admission_number','—') }}</p>
+              </td>
+              <td class="table-td text-xs">{{ (p.employers or {}).get('company_name','—') }}</td>
+              <td class="table-td text-xs">{{ (p.industry_supervisors or {}).get('full_name','—') }}</td>
+              <td class="table-td text-xs">
+                {{ p.start_date or '—' }}<br>{{ p.end_date or 'Ongoing' }}
+              </td>
+              <td class="table-td">
+                {% if p.status == 'active' %}<span class="badge-approved">Active</span>
+                {% elif p.status == 'completed' %}<span class="badge-info">Completed</span>
+                {% else %}<span class="badge-rejected">{{ p.status | title }}</span>{% endif %}
+              </td>
+              <td class="table-td">
+                <a href="/logbook/trainer/view-logbook/{{ p.id }}" class="btn-primary text-xs">
+                  <i class="fas fa-book mr-1"></i>Logbook
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

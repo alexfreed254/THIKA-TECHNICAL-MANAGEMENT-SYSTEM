@@ -1,0 +1,119 @@
+{% extends "base_tailwind.html" %}
+{% block title %}All EV Reports{% endblock %}
+{% block page_title %}External Verification Reports{% endblock %}
+
+{% block sidebar_nav %}
+<div class="menu-section">External Verification</div>
+<a href="/verification/external/all-reports" class="sidebar-link"><i class="fas fa-list fa-fw"></i> All Reports</a>
+<div class="menu-section">Internal Verification</div>
+<a href="/verification/internal/review-queue" class="sidebar-link"><i class="fas fa-inbox fa-fw"></i> IV Queue</a>
+<div class="menu-section">Other</div>
+<a href="/exam/hod-review" class="sidebar-link"><i class="fas fa-clipboard-check fa-fw"></i> Exam Approvals</a>
+<a href="/results/view" class="sidebar-link"><i class="fas fa-chart-bar fa-fw"></i> Results</a>
+<a href="/clearance/admin/all" class="sidebar-link"><i class="fas fa-certificate fa-fw"></i> Clearance</a>
+{% endblock %}
+
+{% block content %}
+<!-- Stats -->
+<div class="grid grid-cols-3 gap-4 mb-6">
+  <div class="card text-center border-t-4 border-blue-500">
+    <p class="text-3xl font-bold text-blue-700">{{ total }}</p>
+    <p class="text-sm text-gray-500 mt-1">Total Reports</p>
+  </div>
+  <div class="card text-center border-t-4 border-green-500">
+    <p class="text-3xl font-bold text-green-700">{{ avg_score }}%</p>
+    <p class="text-sm text-gray-500 mt-1">Avg Compliance</p>
+  </div>
+  <div class="card text-center border-t-4 border-purple-500">
+    <p class="text-3xl font-bold text-purple-700">{{ reports | selectattr('status','eq','approved') | list | length }}</p>
+    <p class="text-sm text-gray-500 mt-1">Approved</p>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4 py-3">
+  <form method="GET" class="flex gap-3 flex-wrap items-end">
+    <div>
+      <label class="form-label text-xs">Department</label>
+      <select name="dept_id" class="form-input text-xs py-1.5">
+        <option value="">All Departments</option>
+        {% for d in depts %}
+        <option value="{{ d.id }}" {% if dept_filter == d.id %}selected{% endif %}>{{ d.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn-primary text-xs py-1.5">Filter</button>
+    <a href="/verification/external/all-reports" class="btn-ghost text-xs py-1.5">Clear</a>
+  </form>
+</div>
+
+<div class="card overflow-hidden p-0">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-blue-700">
+          <th class="table-th">#</th>
+          <th class="table-th">Department</th>
+          <th class="table-th">Report Title</th>
+          <th class="table-th">Visit Date</th>
+          <th class="table-th text-center">Compliance</th>
+          <th class="table-th">Status</th>
+          <th class="table-th">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in reports %}
+        <tr class="table-tr">
+          <td class="table-td text-gray-400">{{ r.id }}</td>
+          <td class="table-td font-medium">{{ (r.departments or {}).get('name','—') }}</td>
+          <td class="table-td">{{ r.report_title[:55] }}{% if r.report_title|length > 55 %}...{% endif %}</td>
+          <td class="table-td text-xs">{{ r.visit_date or '—' }}</td>
+          <td class="table-td text-center">
+            {% if r.compliance_score is not none %}
+            <div class="flex items-center gap-2">
+              <div class="flex-1 bg-gray-200 rounded-full h-2">
+                <div class="h-2 rounded-full {% if r.compliance_score >= 70 %}bg-green-500{% else %}bg-red-500{% endif %}"
+                     style="width:{{ r.compliance_score }}%"></div>
+              </div>
+              <span class="text-xs font-bold {% if r.compliance_score >= 70 %}text-green-700{% else %}text-red-700{% endif %}">
+                {{ r.compliance_score }}%
+              </span>
+            </div>
+            {% else %}—{% endif %}
+          </td>
+          <td class="table-td">
+            {% if r.status == 'approved' %}<span class="badge-approved">Approved</span>
+            {% elif r.status == 'rejected' %}<span class="badge-rejected">Rejected</span>
+            {% elif r.status == 'submitted' %}<span class="badge-pending">Submitted</span>
+            {% else %}<span class="badge-info">Draft</span>{% endif %}
+          </td>
+          <td class="table-td">
+            <div class="flex gap-2">
+              <a href="/verification/external/report/{{ r.id }}" class="btn-primary text-xs">
+                <i class="fas fa-eye mr-1"></i>View
+              </a>
+              {% if r.status == 'submitted' %}
+              <form method="POST" action="/verification/external/action/{{ r.id }}" class="inline">
+                <input type="hidden" name="action" value="approve">
+                <button type="submit" class="btn-success text-xs"
+                        onclick="return confirm('Approve this report?')">
+                  <i class="fas fa-check"></i>
+                </button>
+              </form>
+              <form method="POST" action="/verification/external/action/{{ r.id }}" class="inline">
+                <input type="hidden" name="action" value="reject">
+                <button type="submit" class="btn-danger text-xs"
+                        onclick="return confirm('Reject this report?')">
+                  <i class="fas fa-times"></i>
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

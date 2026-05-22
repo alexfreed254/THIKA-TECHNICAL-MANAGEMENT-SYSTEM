@@ -1,0 +1,86 @@
+{% extends "base_tailwind.html" %}
+{% block title %}Dual Training Monitoring{% endblock %}
+{% block page_title %}Dual Training Monitoring Dashboard{% endblock %}
+
+{% block sidebar_nav %}
+<div class="menu-section">Dual Training</div>
+<a href="/dual-training/employers" class="sidebar-link"><i class="fas fa-building fa-fw"></i> Employers</a>
+<a href="/dual-training/allocations" class="sidebar-link"><i class="fas fa-industry fa-fw"></i> Allocations</a>
+<a href="/dual-training/monitoring" class="sidebar-link"><i class="fas fa-chart-line fa-fw"></i> Monitoring</a>
+<div class="menu-section">Logbook</div>
+<a href="/logbook/trainer/monitoring" class="sidebar-link"><i class="fas fa-eye fa-fw"></i> Logbook Monitor</a>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+  <div class="card text-center border-t-4 border-blue-500">
+    <p class="text-3xl font-bold text-blue-700">{{ allocs|length }}</p>
+    <p class="text-sm text-gray-500 mt-1">Total Allocations</p>
+  </div>
+  <div class="card text-center border-t-4 border-green-500">
+    <p class="text-3xl font-bold text-green-700">{{ allocs | selectattr('status','eq','active') | list | length }}</p>
+    <p class="text-sm text-gray-500 mt-1">Active</p>
+  </div>
+  <div class="card text-center border-t-4 border-purple-500">
+    <p class="text-3xl font-bold text-purple-700">{{ allocs | sum(attribute='total_hours') | round(1) }}</p>
+    <p class="text-sm text-gray-500 mt-1">Total Hours</p>
+  </div>
+  <div class="card text-center border-t-4 border-yellow-500">
+    <p class="text-3xl font-bold text-yellow-700">{{ allocs | sum(attribute='feedback_count') }}</p>
+    <p class="text-sm text-gray-500 mt-1">Feedback Reports</p>
+  </div>
+</div>
+
+<div class="card overflow-hidden p-0">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-blue-700">
+          <th class="table-th">Student</th>
+          <th class="table-th">Class</th>
+          <th class="table-th">Employer</th>
+          <th class="table-th text-center">Hours</th>
+          <th class="table-th text-center">Feedback</th>
+          <th class="table-th">Status</th>
+          <th class="table-th">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in allocs %}
+        <tr class="table-tr">
+          <td class="table-td">
+            <p class="font-medium">{{ (a.students or {}).get('full_name','—') }}</p>
+            <p class="text-xs text-gray-400">{{ (a.students or {}).get('admission_number','—') }}</p>
+          </td>
+          <td class="table-td text-xs">{{ ((a.students or {}).get('classes') or {}).get('name','—') }}</td>
+          <td class="table-td text-xs">{{ (a.employers or {}).get('company_name','—') }}</td>
+          <td class="table-td text-center font-bold text-blue-700">{{ a.total_hours | round(1) }}</td>
+          <td class="table-td text-center">
+            {% if a.feedback_count > 0 %}
+            <span class="badge-approved">{{ a.feedback_count }}</span>
+            {% else %}
+            <span class="text-gray-400">0</span>
+            {% endif %}
+          </td>
+          <td class="table-td">
+            {% if a.status == 'active' %}<span class="badge-approved">Active</span>
+            {% elif a.status == 'completed' %}<span class="badge-info">Completed</span>
+            {% else %}<span class="badge-rejected">{{ a.status | title }}</span>{% endif %}
+          </td>
+          <td class="table-td">
+            <div class="flex gap-1">
+              <a href="/dual-training/competencies/{{ a.id }}" class="btn-primary text-xs py-1 px-2">
+                <i class="fas fa-tasks mr-1"></i>Skills
+              </a>
+              <a href="/dual-training/workplace-attendance/{{ a.id }}" class="btn-ghost text-xs py-1 px-2">
+                <i class="fas fa-calendar-check mr-1"></i>Attend
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

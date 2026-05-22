@@ -1,0 +1,132 @@
+{% extends "base_tailwind.html" %}
+{% block title %}View Results{% endblock %}
+{% block page_title %}View Student Results{% endblock %}
+
+{% block sidebar_nav %}
+<div class="menu-section">Results</div>
+<a href="/results/enter" class="sidebar-link"><i class="fas fa-keyboard fa-fw"></i> Manual Entry</a>
+<a href="/results/upload-excel" class="sidebar-link"><i class="fas fa-file-excel fa-fw"></i> Excel Upload</a>
+<a href="/results/view" class="sidebar-link"><i class="fas fa-table fa-fw"></i> View Results</a>
+<div class="menu-section">Other</div>
+<a href="/lecturer/dashboard" class="sidebar-link"><i class="fas fa-chalkboard-teacher fa-fw"></i> Attendance</a>
+{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="card mb-6">
+  <form method="GET" class="grid grid-cols-2 md:grid-cols-5 gap-3">
+    <div>
+      <label class="form-label text-xs">Class</label>
+      <select name="class_id" class="form-input text-xs">
+        <option value="">-- Class --</option>
+        {% for c in classes %}
+        <option value="{{ c.id }}" {% if class_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="form-label text-xs">Unit</label>
+      <select name="unit_id" class="form-input text-xs">
+        <option value="">-- Unit --</option>
+        {% for u in units %}
+        <option value="{{ u.id }}" {% if unit_id == u.id %}selected{% endif %}>{{ u.code }} — {{ u.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="form-label text-xs">Year</label>
+      <select name="year" class="form-input text-xs">
+        {% for y in range(2024, 2030) %}
+        <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="form-label text-xs">Term</label>
+      <select name="term" class="form-input text-xs">
+        <option value="1" {% if term == 1 %}selected{% endif %}>Term 1</option>
+        <option value="2" {% if term == 2 %}selected{% endif %}>Term 2</option>
+        <option value="3" {% if term == 3 %}selected{% endif %}>Term 3</option>
+      </select>
+    </div>
+    <div class="flex items-end">
+      <button type="submit" class="btn-primary w-full text-xs">View</button>
+    </div>
+  </form>
+</div>
+
+{% if results %}
+<!-- Summary Stats -->
+{% set total_s = results|length %}
+{% set passed  = results | selectattr('grade','in',['A','B','C']) | list | length %}
+{% set avg_total = (results | sum(attribute='total_score') / total_s) | round(1) if total_s else 0 %}
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <div class="card text-center py-3"><p class="text-2xl font-bold text-blue-700">{{ total_s }}</p><p class="text-xs text-gray-500">Students</p></div>
+  <div class="card text-center py-3"><p class="text-2xl font-bold text-green-700">{{ passed }}</p><p class="text-xs text-gray-500">Passed</p></div>
+  <div class="card text-center py-3"><p class="text-2xl font-bold text-red-700">{{ total_s - passed }}</p><p class="text-xs text-gray-500">Failed/Supp</p></div>
+  <div class="card text-center py-3"><p class="text-2xl font-bold text-purple-700">{{ avg_total }}</p><p class="text-xs text-gray-500">Avg Score</p></div>
+</div>
+
+<div class="card overflow-hidden p-0">
+  <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+    <h3 class="font-bold text-gray-800">Results — Year {{ year }}, Term {{ term }}</h3>
+    <button onclick="window.print()" class="btn-ghost text-xs">
+      <i class="fas fa-print mr-1"></i>Print
+    </button>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-blue-700">
+          <th class="table-th">#</th>
+          <th class="table-th">Adm No.</th>
+          <th class="table-th">Student Name</th>
+          <th class="table-th text-center">CAT</th>
+          <th class="table-th text-center">Exam</th>
+          <th class="table-th text-center">Practical</th>
+          <th class="table-th text-center">Total</th>
+          <th class="table-th text-center">Grade</th>
+          <th class="table-th text-center">Remarks</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in results | sort(attribute='students.admission_number') %}
+        <tr class="table-tr">
+          <td class="table-td text-gray-400">{{ loop.index }}</td>
+          <td class="table-td font-mono font-bold text-blue-700">{{ (r.students or {}).get('admission_number','—') }}</td>
+          <td class="table-td font-medium">{{ (r.students or {}).get('full_name','—') }}</td>
+          <td class="table-td text-center">{{ r.cat_score if r.cat_score is not none else '—' }}</td>
+          <td class="table-td text-center">{{ r.exam_score if r.exam_score is not none else '—' }}</td>
+          <td class="table-td text-center">{{ r.practical_score if r.practical_score is not none else '—' }}</td>
+          <td class="table-td text-center font-bold">{{ r.total_score if r.total_score is not none else '—' }}</td>
+          <td class="table-td text-center">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm
+              {% if r.grade == 'A' %}bg-green-100 text-green-800
+              {% elif r.grade == 'B' %}bg-blue-100 text-blue-800
+              {% elif r.grade == 'C' %}bg-yellow-100 text-yellow-800
+              {% elif r.grade == 'D' %}bg-orange-100 text-orange-800
+              {% else %}bg-red-100 text-red-800{% endif %}">{{ r.grade or '—' }}</span>
+          </td>
+          <td class="table-td text-center text-xs font-medium
+            {% if r.remarks in ('Distinction','Credit','Pass') %}text-green-700{% else %}text-red-700{% endif %}">
+            {{ r.remarks or '—' }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% elif class_id and unit_id %}
+<div class="card text-center py-12 text-gray-400">
+  <i class="fas fa-inbox text-4xl mb-3"></i>
+  <p>No results found for this selection.</p>
+  <a href="/results/enter?class_id={{ class_id }}&unit_id={{ unit_id }}&year={{ year }}&term={{ term }}" class="btn-primary mt-3 inline-block text-sm">Enter Results</a>
+</div>
+{% else %}
+<div class="card text-center py-12 text-gray-400">
+  <i class="fas fa-arrow-up text-4xl mb-3"></i>
+  <p>Select class and unit above to view results.</p>
+</div>
+{% endif %}
+{% endblock %}

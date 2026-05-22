@@ -1,0 +1,223 @@
+{% extends "base_tailwind.html" %}
+{% block title %}Trainee Logbook{% endblock %}
+{% block page_title %}Trainee Logbook{% endblock %}
+
+{% block sidebar_nav %}
+<a href="/logbook/trainer/monitoring" class="sidebar-link"><i class="fas fa-chart-line fa-fw"></i> Monitoring</a>
+<a href="/logbook/admin/placements" class="sidebar-link"><i class="fas fa-briefcase fa-fw"></i> Placements</a>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="card mb-6 bg-gradient-to-r from-blue-700 to-blue-800 text-white">
+  <div class="flex items-start justify-between flex-wrap gap-4">
+    <div>
+      <p class="text-blue-200 text-xs uppercase tracking-wide font-semibold">Trainee Logbook</p>
+      <h2 class="text-2xl font-bold mt-1">{{ (placement.students or {}).get('full_name','—') }}</h2>
+      <p class="text-blue-200 text-sm">{{ (placement.students or {}).get('admission_number','—') }}</p>
+      <p class="text-blue-200 text-sm mt-2">
+        <i class="fas fa-building mr-1"></i>{{ (placement.employers or {}).get('company_name','—') }}
+      </p>
+      <p class="text-blue-200 text-sm">
+        <i class="fas fa-user-tie mr-1"></i>Supervisor: {{ (placement.industry_supervisors or {}).get('full_name','—') }}
+      </p>
+    </div>
+    <div class="grid grid-cols-2 gap-3 text-center">
+      <div class="bg-white/10 rounded-xl p-4">
+        <p class="text-3xl font-bold">{{ total }}</p>
+        <p class="text-xs text-blue-200">Total Entries</p>
+      </div>
+      <div class="bg-white/10 rounded-xl p-4">
+        <p class="text-3xl font-bold text-green-300">{{ approved }}</p>
+        <p class="text-xs text-blue-200">Approved</p>
+      </div>
+      <div class="bg-white/10 rounded-xl p-4">
+        <p class="text-3xl font-bold text-yellow-300">{{ pending }}</p>
+        <p class="text-xs text-blue-200">Pending</p>
+      </div>
+      <div class="bg-white/10 rounded-xl p-4">
+        <p class="text-3xl font-bold text-red-300">{{ rejected }}</p>
+        <p class="text-xs text-blue-200">Rejected</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="flex gap-2 mb-4 border-b border-gray-200">
+  <button onclick="showTab('entries')" id="tab-entries"
+          class="px-4 py-2 text-sm font-medium border-b-2 border-blue-700 text-blue-700">
+    <i class="fas fa-book mr-1"></i>Logbook Entries
+  </button>
+  <button onclick="showTab('evaluations')" id="tab-evaluations"
+          class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+    <i class="fas fa-star mr-1"></i>Supervisor Evaluations
+  </button>
+</div>
+
+<!-- Entries Tab -->
+<div id="tab-entries-content">
+  {% if not entries %}
+  <div class="card text-center py-12 text-gray-400">
+    <i class="fas fa-book-open text-4xl mb-3"></i>
+    <p>No logbook entries found.</p>
+  </div>
+  {% else %}
+  <div class="card overflow-hidden p-0">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-blue-700">
+            <th class="table-th">Date</th>
+            <th class="table-th">Slot</th>
+            <th class="table-th">Activity</th>
+            <th class="table-th">Time</th>
+            <th class="table-th">Evidence</th>
+            <th class="table-th">Status</th>
+            <th class="table-th">Comment</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in entries %}
+          <tr class="table-tr">
+            <td class="table-td whitespace-nowrap">{{ e.submission_date }}</td>
+            <td class="table-td"><span class="badge-info">{{ e.submission_slot }}</span></td>
+            <td class="table-td">
+              <p class="font-medium text-gray-800">{{ e.activity_title[:50] }}{% if e.activity_title|length > 50 %}...{% endif %}</p>
+              {% if e.skills_gained %}
+              <p class="text-xs text-gray-400 mt-0.5">Skills: {{ e.skills_gained[:40] }}</p>
+              {% endif %}
+            </td>
+            <td class="table-td text-center">{{ e.time_spent or '—' }}h</td>
+            <td class="table-td text-center">
+              <button onclick="loadEvidence({{ e.id }}, this)"
+                      class="text-blue-600 hover:text-blue-800 text-xs">
+                <i class="fas fa-paperclip"></i> View
+              </button>
+            </td>
+            <td class="table-td">
+              {% if e.status == 'approved' %}<span class="badge-approved">Approved</span>
+              {% elif e.status == 'rejected' %}<span class="badge-rejected">Rejected</span>
+              {% else %}<span class="badge-pending">Pending</span>{% endif %}
+            </td>
+            <td class="table-td text-xs text-gray-500">{{ e.supervisor_comment or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Evaluations Tab -->
+<div id="tab-evaluations-content" class="hidden">
+  {% if not evaluations %}
+  <div class="card text-center py-12 text-gray-400">
+    <i class="fas fa-star text-4xl mb-3"></i>
+    <p>No supervisor evaluations yet.</p>
+  </div>
+  {% else %}
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {% for ev in evaluations %}
+    <div class="card">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="font-bold text-gray-800">Week {{ ev.week_number }}</h4>
+        <span class="text-xs text-gray-400">{{ ev.created_at | to_eat }}</span>
+      </div>
+      {% set criteria = [
+        ('Punctuality', ev.punctuality),
+        ('Technical Skills', ev.technical_skills),
+        ('Discipline', ev.discipline),
+        ('Communication', ev.communication),
+        ('Safety Awareness', ev.safety_awareness),
+        ('Teamwork', ev.teamwork),
+        ('Initiative', ev.initiative)
+      ] %}
+      {% for label, score in criteria %}
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs text-gray-600 w-36">{{ label }}</span>
+        <div class="flex gap-1">
+          {% for i in range(1, 6) %}
+          <div class="w-5 h-5 rounded-full text-xs flex items-center justify-center font-bold
+            {% if score and i <= score %}bg-blue-600 text-white{% else %}bg-gray-100 text-gray-400{% endif %}">
+            {{ i }}
+          </div>
+          {% endfor %}
+        </div>
+        <span class="text-xs font-bold text-blue-700 w-8 text-right">{{ score or '—' }}/5</span>
+      </div>
+      {% endfor %}
+      {% if ev.overall_comment %}
+      <div class="mt-3 p-2 bg-gray-50 rounded text-xs text-gray-600 border border-gray-200">
+        {{ ev.overall_comment }}
+      </div>
+      {% endif %}
+      {% if ev.digital_signature %}
+      <p class="text-xs text-green-600 mt-2"><i class="fas fa-signature mr-1"></i>Digitally signed</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- Evidence Modal -->
+<div id="evidenceModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center">
+  <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg mx-4">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-gray-800">Evidence Files</h3>
+      <button onclick="closeEvidence()" class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-times text-xl"></i>
+      </button>
+    </div>
+    <div id="evidenceContent" class="space-y-2 max-h-64 overflow-y-auto">
+      <p class="text-gray-400 text-sm text-center py-4">Loading...</p>
+    </div>
+  </div>
+</div>
+
+<script>
+function showTab(tab) {
+  ['entries','evaluations'].forEach(t => {
+    document.getElementById('tab-' + t + '-content').classList.toggle('hidden', t !== tab);
+    const btn = document.getElementById('tab-' + t);
+    btn.className = t === tab
+      ? 'px-4 py-2 text-sm font-medium border-b-2 border-blue-700 text-blue-700'
+      : 'px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700';
+  });
+}
+
+function loadEvidence(entryId, btn) {
+  document.getElementById('evidenceModal').classList.remove('hidden');
+  document.getElementById('evidenceModal').classList.add('flex');
+  document.getElementById('evidenceContent').innerHTML = '<p class="text-gray-400 text-sm text-center py-4">Loading...</p>';
+  fetch('/logbook/api/entry-evidence/' + entryId)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.length) {
+        document.getElementById('evidenceContent').innerHTML = '<p class="text-gray-400 text-sm text-center py-4">No evidence files attached.</p>';
+        return;
+      }
+      const icons = { photo: 'fa-image text-blue-500', video: 'fa-video text-purple-500',
+                      pdf: 'fa-file-pdf text-red-500', document: 'fa-file text-gray-500' };
+      document.getElementById('evidenceContent').innerHTML = data.map(f => `
+        <a href="${f.file_url}" target="_blank"
+           class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-blue-50 transition-colors">
+          <i class="fas ${icons[f.file_type] || icons.document} text-xl"></i>
+          <div>
+            <p class="text-sm font-medium text-gray-800">${f.file_name || 'View File'}</p>
+            <p class="text-xs text-gray-400">${f.file_type || 'file'}</p>
+          </div>
+          <i class="fas fa-external-link-alt text-gray-400 ml-auto"></i>
+        </a>
+      `).join('');
+    });
+}
+
+function closeEvidence() {
+  document.getElementById('evidenceModal').classList.add('hidden');
+  document.getElementById('evidenceModal').classList.remove('flex');
+}
+</script>
+{% endblock %}

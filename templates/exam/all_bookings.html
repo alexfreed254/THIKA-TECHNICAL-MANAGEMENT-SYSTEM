@@ -1,0 +1,109 @@
+{% extends "base_tailwind.html" %}
+{% block title %}All Exam Bookings{% endblock %}
+{% block page_title %}All Exam Bookings{% endblock %}
+
+{% block sidebar_nav %}
+<div class="menu-section">Examination</div>
+<a href="/exam/hod-review" class="sidebar-link"><i class="fas fa-clipboard-check fa-fw"></i> HOD Queue</a>
+<a href="/exam/registrar-review" class="sidebar-link"><i class="fas fa-stamp fa-fw"></i> Registrar Queue</a>
+<a href="/exam/admin/all-bookings" class="sidebar-link"><i class="fas fa-list fa-fw"></i> All Bookings</a>
+<a href="/exam/admin/series" class="sidebar-link"><i class="fas fa-calendar fa-fw"></i> Exam Series</a>
+<a href="/exam/admin/centers" class="sidebar-link"><i class="fas fa-building fa-fw"></i> Centers</a>
+{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="card mb-4 py-3">
+  <form method="GET" class="flex gap-3 flex-wrap items-end">
+    <div>
+      <label class="form-label text-xs">Status</label>
+      <select name="status" class="form-input text-xs py-1.5">
+        <option value="">All Statuses</option>
+        {% for s in ['draft','submitted','hod_approved','hod_rejected','registrar_approved','registrar_rejected','confirmed'] %}
+        <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s | replace('_',' ') | title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="form-label text-xs">Department</label>
+      <select name="dept_id" class="form-input text-xs py-1.5">
+        <option value="">All Departments</option>
+        {% for d in depts %}
+        <option value="{{ d.id }}" {% if dept_filter == d.id %}selected{% endif %}>{{ d.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn-primary text-xs py-1.5">Filter</button>
+    <a href="/exam/admin/all-bookings" class="btn-ghost text-xs py-1.5">Clear</a>
+  </form>
+</div>
+
+<!-- Stats -->
+<div class="grid grid-cols-3 md:grid-cols-7 gap-2 mb-4">
+  {% for s, label, color in [
+    ('submitted','Submitted','yellow'),
+    ('hod_approved','HOD Approved','blue'),
+    ('hod_rejected','HOD Rejected','red'),
+    ('registrar_approved','Reg. Approved','green'),
+    ('registrar_rejected','Reg. Rejected','red'),
+    ('confirmed','Confirmed','green'),
+    ('draft','Draft','gray')
+  ] %}
+  <div class="card text-center py-2 border-t-2 border-{{ color }}-400">
+    <p class="text-xl font-bold text-{{ color }}-700">{{ bookings | selectattr('status','eq',s) | list | length }}</p>
+    <p class="text-xs text-gray-500 mt-0.5">{{ label }}</p>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card overflow-hidden p-0">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-blue-700">
+          <th class="table-th">#</th>
+          <th class="table-th">Student</th>
+          <th class="table-th">Course / Level</th>
+          <th class="table-th">Series</th>
+          <th class="table-th">Center</th>
+          <th class="table-th text-right">Fee</th>
+          <th class="table-th">Status</th>
+          <th class="table-th">Date</th>
+          <th class="table-th">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in bookings %}
+        <tr class="table-tr">
+          <td class="table-td text-gray-400">{{ b.id }}</td>
+          <td class="table-td">
+            <p class="font-medium">{{ (b.students or {}).get('full_name', b.full_name) }}</p>
+            <p class="text-xs text-gray-400">{{ (b.students or {}).get('admission_number', b.admission_number) }}</p>
+          </td>
+          <td class="table-td text-xs">
+            <p>{{ b.course_name or '—' }}</p>
+            <p class="text-gray-400">{{ b.module_level or '' }}</p>
+          </td>
+          <td class="table-td text-xs">{{ (b.exam_series or {}).get('name','—') }}</td>
+          <td class="table-td text-xs">{{ (b.assessment_centers or {}).get('name','—') }}</td>
+          <td class="table-td text-right font-bold text-blue-700">{{ "%.0f"|format(b.total_cost or 0) }}</td>
+          <td class="table-td">
+            {% if b.status == 'registrar_approved' or b.status == 'confirmed' %}<span class="badge-approved">Approved</span>
+            {% elif 'rejected' in b.status %}<span class="badge-rejected">Rejected</span>
+            {% elif b.status == 'hod_approved' %}<span class="badge-info">HOD ✓</span>
+            {% elif b.status == 'submitted' %}<span class="badge-pending">Submitted</span>
+            {% else %}<span class="badge-info">{{ b.status | title }}</span>{% endif %}
+          </td>
+          <td class="table-td text-xs">{{ b.created_at | to_eat('%d %b %Y') }}</td>
+          <td class="table-td">
+            <a href="/exam/booking/{{ b.id }}" class="btn-primary text-xs">
+              <i class="fas fa-eye mr-1"></i>View
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
