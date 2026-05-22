@@ -229,29 +229,33 @@ def login():
             resp = client.auth.sign_in_with_password({"email": email, "password": password})
         except Exception as exc:
             msg = str(exc)
-            print(f"[auth] sign_in failed for {email}: {msg}")
+            msg_lower = msg.lower()
+            print(f"[auth] sign_in EXCEPTION for {email}: {repr(exc)}")
 
-            # Supabase returns "Email not confirmed" when the user was created
-            # via the dashboard "Add User" without auto-confirming the email.
-            # Auto-confirm via the service-role admin API and retry once.
-            if "email not confirmed" in msg.lower() or "not confirmed" in msg.lower():
+            if "email not confirmed" in msg_lower or "not confirmed" in msg_lower:
+                # User created via Supabase dashboard without email confirmation.
+                # Auto-confirm via admin API and retry.
                 try:
                     resp = _auto_confirm_and_login(email, password)
                 except Exception as confirm_exc:
                     print(f"[auth] auto-confirm failed for {email}: {confirm_exc}")
                     return render_template("auth/login.html",
                                            active_tab=active_tab,
-                                           error="Your email is not confirmed. Ask the super admin to confirm your account in Supabase.",
+                                           error="Email not confirmed. The system tried to auto-confirm but failed. "
+                                                 "Please go to Supabase → Authentication → Users, find this user "
+                                                 "and click 'Confirm email' manually.",
                                            email=email)
-            elif any(k in msg.lower() for k in ["invalid login", "invalid credentials", "invalid"]):
+            elif "invalid login credentials" in msg_lower:
+                # Genuinely wrong password
                 return render_template("auth/login.html",
                                        active_tab=active_tab,
-                                       error="Invalid email or password. Please check your credentials.",
+                                       error="Incorrect email or password.",
                                        email=email)
             else:
+                # Show the REAL Supabase error so we can diagnose it
                 return render_template("auth/login.html",
                                        active_tab=active_tab,
-                                       error=f"Login error: {msg}",
+                                       error=f"Supabase error: {msg}",
                                        email=email)
 
         if not resp or not resp.user:
