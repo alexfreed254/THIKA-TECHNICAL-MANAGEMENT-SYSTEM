@@ -31,14 +31,19 @@ def _ensure_profile(user_id: str, email: str) -> dict:
     except Exception:
         pass
 
-    # Profile missing — create a default student row
+    # Profile missing — only auto-create for non-admin users.
+    # Super admins / dept admins must be inserted manually or via the
+    # super_admin "add user" flow so their role is set correctly.
+    # We still create a placeholder so the user gets a meaningful error
+    # rather than a crash, but we mark it inactive so they cannot log in
+    # until an admin activates and assigns the correct role.
     try:
         svc.table("user_profiles").insert({
             "id":            user_id,
             "full_name":     email,
             "role":          "student",
             "department_id": None,
-            "is_active":     True,
+            "is_active":     False,   # inactive until admin sets role
         }).execute()
         res = (svc.table("user_profiles")
                   .select("*")

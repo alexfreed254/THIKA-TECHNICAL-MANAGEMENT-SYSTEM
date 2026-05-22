@@ -22,4 +22,5 @@ def index():
             return redirect(url_for("lecturer.dashboard"))
         elif role == "student":
             return redirect(url_for("student.dashboard"))
-    return render_template("main/index.html")
+    # Not logged in — go straight to the unified login page
+    return redirect(url_for("auth.login"))
