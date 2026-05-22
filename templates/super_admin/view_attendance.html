@@ -2,19 +2,57 @@
 {% block title %}Attendance{% endblock %}
 {% block page_title %}View Attendance Records{% endblock %}
 {% block extra_style %}
-.page-wrap{padding:24px}.card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);overflow:hidden}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#f5f5f5;padding:10px 14px;text-align:left;font-size:12px;color:#555;border-bottom:2px solid #eee}td{padding:10px 14px;border-bottom:1px solid #f5f5f5}.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}.badge-present{background:#e8f5e9;color:#2e7d32}.badge-absent{background:#ffebee;color:#c62828}
+.page-wrap{padding:24px}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);overflow:hidden;margin-bottom:20px}
+.filter-card{padding:16px 20px;background:#fafafa;border-bottom:1px solid #eee}
+.filter-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.filter-row .f-group{display:flex;flex-direction:column;gap:4px;min-width:110px;flex:1}
+.filter-row .f-group label{font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px}
+.filter-row .f-group select,
+.filter-row .f-group input{padding:8px 10px;border:1.5px solid #e0e0e0;border-radius:7px;font-size:13px;font-family:inherit;outline:none}
+.filter-row .f-group select:focus,
+.filter-row .f-group input:focus{border-color:#7b1fa2}
+.btn-filter{padding:9px 18px;background:#7b1fa2;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;align-self:flex-end}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#f5f5f5;padding:10px 14px;text-align:left;font-size:12px;color:#555;border-bottom:2px solid #eee}
+td{padding:10px 14px;border-bottom:1px solid #f5f5f5}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-present{background:#e8f5e9;color:#2e7d32}
+.badge-absent{background:#ffebee;color:#c62828}
 {% endblock %}
 {% block content %}
 <div class="page-wrap">
   <div class="card">
-    <div style="padding:20px;border-bottom:1px solid #eee">
-      <form method="get" style="display:flex;gap:10px;flex-wrap:wrap">
-        <select name="unit_id" style="padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px">
-          <option value="">All Units</option>
-          {% for u in units %}<option value="{{ u.id }}" {% if unit_id==u.id %}selected{% endif %}>{{ u.code }}</option>{% endfor %}
-        </select>
-        <input type="number" name="week" placeholder="Week" value="{{ week or '' }}" style="padding:8px;border:1px solid #ddd;border-radius:6px;width:80px;font-size:13px">
-        <button type="submit" style="padding:8px 16px;background:#7b1fa2;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px">Filter</button>
+    <div class="filter-card">
+      <form method="get">
+        <div class="filter-row">
+          <div class="f-group">
+            <label>Unit</label>
+            <select name="unit_id">
+              <option value="">All Units</option>
+              {% for u in units %}<option value="{{ u.id }}" {% if unit_id==u.id %}selected{% endif %}>{{ u.code }} — {{ u.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="f-group" style="max-width:90px;">
+            <label>Week</label>
+            <input type="number" name="week" placeholder="e.g. 3" value="{{ week or '' }}" min="1" max="52">
+          </div>
+          <div class="f-group" style="max-width:90px;">
+            <label>Year</label>
+            <select name="year">
+              {% for y in range(2024,2030) %}<option value="{{ y }}" {% if year==y %}selected{% endif %}>{{ y }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="f-group" style="max-width:120px;">
+            <label>Term</label>
+            <select name="term">
+              <option value="1" {% if term==1 %}selected{% endif %}>Term 1</option>
+              <option value="2" {% if term==2 %}selected{% endif %}>Term 2</option>
+              <option value="3" {% if term==3 %}selected{% endif %}>Term 3</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-filter"><i class="fas fa-filter"></i> Filter</button>
+        </div>
       </form>
     </div>
     <div style="overflow-x:auto">

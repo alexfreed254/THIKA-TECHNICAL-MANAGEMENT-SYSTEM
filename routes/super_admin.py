@@ -1,9 +1,7 @@
 """
 routes/super_admin.py — Super Admin blueprint.
-Fixes applied:
-  - Removed broken db.rpc("v_department_stats_fn") call
-  - Replaced db.auth.admin.create_user with supabase-py v2 correct API
-  - All DB calls wrapped in try/except to prevent 500s
+Supports all user roles: dept_admin, trainer, employer,
+industrial_supervisor, external_verifier, quality_assurance, student.
 """
 
 from flask import (Blueprint, render_template, request,
@@ -12,6 +10,16 @@ from auth_utils import super_admin_required, write_audit_log
 from db import get_service_client
 
 super_admin_bp = Blueprint("super_admin", __name__)
+
+ALL_ROLES = [
+    ("dept_admin",            "Department Admin"),
+    ("trainer",               "Trainer"),
+    ("employer",              "Employer"),
+    ("industrial_supervisor", "Industrial Supervisor"),
+    ("external_verifier",     "External Verifier"),
+    ("quality_assurance",     "Quality Assurance Officer"),
+    ("student",               "Student / Trainee"),
+]
 
 
 def _svc():
@@ -244,6 +252,114 @@ def toggle_user():
     except Exception as exc:
         flash(f"Update failed: {exc}", "error")
     return redirect(url_for("super_admin.users"))
+
+
+# ── Add User (unified for all roles) ─────────────────────────────────────────
+
+@super_admin_bp.route("/users/add", methods=["GET", "POST"])
+@super_admin_required
+def add_user():
+    db    = _svc()
+    error = None
+
+    if request.method == "POST":
+        role      = request.form.get("role", "").strip()
+        full_name = request.form.get("full_name", "").strip()
+        email     = request.form.get("email", "").strip().lower()
+        password  = request.form.get("password", "")
+        dept_id   = request.form.get("department_id", type=int)
+        phone     = request.form.get("phone", "").strip()
+        employer_id = request.form.get("employer_id", type=int)
+        organization = request.form.get("organization", "").strip()
+
+        valid_roles = [r[0] for r in ALL_ROLES]
+        if role not in valid_roles:
+            error = "Please select a valid role."
+        elif not full_name or not email or not password:
+            error = "Full name, email and password are required."
+        elif len(password) < 8:
+            error = "Password must be at least 8 characters."
+        else:
+            user_id, err = _create_auth_user(email, password, full_name, role)
+            if err:
+                error = f"Could not create auth user: {err}"
+            else:
+                try:
+                    # Always upsert user_profiles
+                    db.table("user_profiles").upsert({
+                        "id":            user_id,
+                        "full_name":     full_name,
+                        "role":          role,
+                        "department_id": dept_id or None,
+                        "is_active":     True,
+                    }).execute()
+
+                    # Role-specific secondary table inserts
+                    if role == "trainer":
+                        username = request.form.get("username", email.split("@")[0]).strip()
+                        db.table("trainers").insert({
+                            "user_id":       user_id,
+                            "name":          full_name,
+                            "username":      username,
+                            "department_id": dept_id or None,
+                        }).execute()
+
+                    elif role == "employer":
+                        # Upsert into employer_users
+                        db.table("employer_users").upsert({
+                            "user_id":     user_id,
+                            "full_name":   full_name,
+                            "email":       email,
+                            "phone":       phone or None,
+                            "employer_id": employer_id or None,
+                            "is_active":   True,
+                        }).execute()
+
+                    elif role == "industrial_supervisor":
+                        db.table("attachment_supervisors").upsert({
+                            "user_id":     user_id,
+                            "full_name":   full_name,
+                            "email":       email,
+                            "phone":       phone or None,
+                            "employer_id": employer_id or None,
+                            "is_active":   True,
+                        }).execute()
+
+                    elif role == "external_verifier":
+                        db.table("ev_verifiers").upsert({
+                            "user_id":      user_id,
+                            "full_name":    full_name,
+                            "email":        email,
+                            "organization": organization or None,
+                            "is_active":    True,
+                        }).execute()
+
+                    elif role == "quality_assurance":
+                        db.table("qa_officers").upsert({
+                            "user_id":      user_id,
+                            "full_name":    full_name,
+                            "email":        email,
+                            "organization": organization or None,
+                            "is_active":    True,
+                        }).execute()
+
+                    write_audit_log("create_user", target=email,
+                                    detail={"role": role, "dept_id": dept_id})
+                    flash(f"{full_name} ({role.replace('_',' ').title()}) created successfully.", "success")
+                    return redirect(url_for("super_admin.users"))
+
+                except Exception as exc:
+                    error = f"Profile save failed: {exc}"
+
+    try:
+        depts     = db.table("departments").select("*").order("name").execute().data or []
+        employers = db.table("employers").select("id, company_name").order("company_name").execute().data or []
+    except Exception:
+        depts = []; employers = []
+
+    return render_template("super_admin/add_user.html",
+                           all_roles=ALL_ROLES, depts=depts,
+                           employers=employers, error=error)
 
 
 # ── System Logs ───────────────────────────────────────────────────────────────

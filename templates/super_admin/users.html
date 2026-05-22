@@ -29,13 +29,20 @@ td { padding:11px 14px; border-bottom:1px solid #f0f0f0; font-size:13px; }
   <div class="card">
     <div class="card-header">
       <span><i class="fas fa-users"></i> Users ({{ users|length }})</span>
+      <a href="/super-admin/users/add" style="background:rgba(255,255,255,0.2);color:#fff;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:12px;font-weight:600;">
+        <i class="fas fa-user-plus"></i> Add User
+      </a>
     </div>
     <div class="filter-bar">
       <a href="/super-admin/users" class="{% if not role_filter %}active{% endif %}">All</a>
-      <a href="?role=super_admin"  class="{% if role_filter=='super_admin' %}active{% endif %}">Super Admin</a>
-      <a href="?role=dept_admin"   class="{% if role_filter=='dept_admin' %}active{% endif %}">Dept Admin</a>
-      <a href="?role=trainer"      class="{% if role_filter=='trainer' %}active{% endif %}">Trainer</a>
-      <a href="?role=student"      class="{% if role_filter=='student' %}active{% endif %}">Student</a>
+      <a href="?role=super_admin"          class="{% if role_filter=='super_admin' %}active{% endif %}">Super Admin</a>
+      <a href="?role=dept_admin"           class="{% if role_filter=='dept_admin' %}active{% endif %}">Dept Admin</a>
+      <a href="?role=trainer"              class="{% if role_filter=='trainer' %}active{% endif %}">Trainer</a>
+      <a href="?role=student"              class="{% if role_filter=='student' %}active{% endif %}">Student</a>
+      <a href="?role=employer"             class="{% if role_filter=='employer' %}active{% endif %}">Employer</a>
+      <a href="?role=industrial_supervisor" class="{% if role_filter=='industrial_supervisor' %}active{% endif %}">Ind. Supervisor</a>
+      <a href="?role=external_verifier"    class="{% if role_filter=='external_verifier' %}active{% endif %}">Ext. Verifier</a>
+      <a href="?role=quality_assurance"    class="{% if role_filter=='quality_assurance' %}active{% endif %}">QA Officer</a>
     </div>
     <div style="overflow-x:auto;">
       <table>
