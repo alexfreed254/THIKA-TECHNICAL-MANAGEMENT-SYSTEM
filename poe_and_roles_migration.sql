@@ -88,6 +88,10 @@ ALTER TABLE user_profiles
         'quality_assurance'
     ));
 
+-- Add must_change_password column (safe to run multiple times)
+ALTER TABLE user_profiles
+    ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE;
+
 
 -- ── 3. Update the auth trigger to accept new roles ────────────
 CREATE OR REPLACE FUNCTION handle_new_auth_user()

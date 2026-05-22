@@ -283,15 +283,20 @@ def login():
         session[SESSION_ACCESS] = resp.session.access_token
         session[SESSION_REFRESH] = resp.session.refresh_token
         session[SESSION_USER] = {
-            "id":      user_id,
-            "email":   resp.user.email,
-            "name":    profile.get("full_name") or email,
-            "role":    profile.get("role"),
-            "dept_id": profile.get("department_id"),
-            "active":  profile["is_active"],
+            "id":                   user_id,
+            "email":                resp.user.email,
+            "name":                 profile.get("full_name") or email,
+            "role":                 profile.get("role"),
+            "dept_id":              profile.get("department_id"),
+            "active":               profile["is_active"],
+            "must_change_password": profile.get("must_change_password", False),
         }
 
         write_audit_log("login", target=email)
+
+        # Force password change if flagged
+        if profile.get("must_change_password"):
+            return redirect(url_for("auth.change_password"))
 
         role = profile.get("role")
         if role == "super_admin":
@@ -340,3 +345,59 @@ def forgot_password():
         msg = ("If an account exists for that email address, "
                "a password reset link has been sent.")
     return render_template("auth/forgot_password.html", msg=msg)
+
+
+# ── Change Password (first-login forced + voluntary) ─────────────────────────
+
+@auth_bp.route("/change-password", methods=["GET", "POST"])
+def change_password():
+    from auth_utils import is_authenticated, current_user, SESSION_USER
+    if not is_authenticated():
+        return redirect(url_for("auth.login"))
+
+    user    = current_user()
+    error   = None
+    success = None
+
+    if request.method == "POST":
+        new_pw  = request.form.get("new_password", "")
+        confirm = request.form.get("confirm_password", "")
+
+        if len(new_pw) < 8:
+            error = "Password must be at least 8 characters."
+        elif new_pw != confirm:
+            error = "Passwords do not match."
+        else:
+            try:
+                svc = get_service_client()
+                # Update password via admin API (no need for old password)
+                svc.auth.admin.update_user_by_id(user["id"], {"password": new_pw})
+
+                # Clear the must_change_password flag
+                svc.table("user_profiles").update(
+                    {"must_change_password": False}
+                ).eq("id", user["id"]).execute()
+
+                # Update session flag
+                session[SESSION_USER]["must_change_password"] = False
+
+                write_audit_log("change_password", target=user["email"])
+                success = "Password changed successfully."
+
+                # Redirect to correct dashboard after a moment
+                role = user.get("role")
+                if role == "super_admin":
+                    return redirect(url_for("super_admin.dashboard"))
+                elif role == "dept_admin":
+                    return redirect(url_for("dept_admin.dashboard"))
+                elif role == "trainer":
+                    return redirect(url_for("lecturer.dashboard"))
+                else:
+                    return redirect(url_for("student.dashboard"))
+
+            except Exception as exc:
+                error = f"Could not update password: {exc}"
+
+    forced = user.get("must_change_password", False)
+    return render_template("auth/change_password.html",
+                           error=error, success=success, forced=forced, user=user)

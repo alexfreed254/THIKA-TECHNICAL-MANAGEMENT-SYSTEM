@@ -4,6 +4,9 @@ Supports all user roles: dept_admin, trainer, employer,
 industrial_supervisor, external_verifier, quality_assurance, student.
 """
 
+import secrets
+import string
+
 from flask import (Blueprint, render_template, request,
                    redirect, url_for, flash, abort, jsonify)
 from auth_utils import super_admin_required, write_audit_log
@@ -24,6 +27,21 @@ ALL_ROLES = [
 
 def _svc():
     return get_service_client()
+
+
+def _generate_temp_password() -> str:
+    """
+    Generates a readable temporary password:
+    3 uppercase + 3 digits + 3 lowercase + 2 symbols = 11 chars, always valid.
+    Example: KJM472xqp@#
+    """
+    upper   = secrets.choice(string.ascii_uppercase) + secrets.choice(string.ascii_uppercase) + secrets.choice(string.ascii_uppercase)
+    digits  = ''.join(secrets.choice(string.digits) for _ in range(3))
+    lower   = ''.join(secrets.choice(string.ascii_lowercase) for _ in range(3))
+    symbols = secrets.choice("@#$!") + secrets.choice("@#$!")
+    parts   = list(upper + digits + lower + symbols)
+    secrets.SystemRandom().shuffle(parts)
+    return ''.join(parts)
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -261,37 +279,39 @@ def toggle_user():
 def add_user():
     db    = _svc()
     error = None
+    created_user = None   # holds {name, email, role, temp_password} after success
 
     if request.method == "POST":
-        role      = request.form.get("role", "").strip()
-        full_name = request.form.get("full_name", "").strip()
-        email     = request.form.get("email", "").strip().lower()
-        password  = request.form.get("password", "")
-        dept_id   = request.form.get("department_id", type=int)
-        phone     = request.form.get("phone", "").strip()
-        employer_id = request.form.get("employer_id", type=int)
+        role         = request.form.get("role", "").strip()
+        full_name    = request.form.get("full_name", "").strip()
+        email        = request.form.get("email", "").strip().lower()
+        dept_id      = request.form.get("department_id", type=int)
+        phone        = request.form.get("phone", "").strip()
+        employer_id  = request.form.get("employer_id", type=int)
         organization = request.form.get("organization", "").strip()
 
         valid_roles = [r[0] for r in ALL_ROLES]
         if role not in valid_roles:
             error = "Please select a valid role."
-        elif not full_name or not email or not password:
-            error = "Full name, email and password are required."
-        elif len(password) < 8:
-            error = "Password must be at least 8 characters."
+        elif not full_name or not email:
+            error = "Full name and email are required."
         else:
-            user_id, err = _create_auth_user(email, password, full_name, role)
+            # Always auto-generate the temporary password
+            temp_password = _generate_temp_password()
+
+            user_id, err = _create_auth_user(email, temp_password, full_name, role)
             if err:
                 error = f"Could not create auth user: {err}"
             else:
                 try:
-                    # Always upsert user_profiles
+                    # Always upsert user_profiles — mark must_change_password = True
                     db.table("user_profiles").upsert({
-                        "id":            user_id,
-                        "full_name":     full_name,
-                        "role":          role,
-                        "department_id": dept_id or None,
-                        "is_active":     True,
+                        "id":                   user_id,
+                        "full_name":            full_name,
+                        "role":                 role,
+                        "department_id":        dept_id or None,
+                        "is_active":            True,
+                        "must_change_password": True,
                     }).execute()
 
                     # Role-specific secondary table inserts
@@ -303,9 +323,7 @@ def add_user():
                             "username":      username,
                             "department_id": dept_id or None,
                         }).execute()
-
                     elif role == "employer":
-                        # Upsert into employer_users
                         db.table("employer_users").upsert({
                             "user_id":     user_id,
                             "full_name":   full_name,
@@ -314,7 +332,6 @@ def add_user():
                             "employer_id": employer_id or None,
                             "is_active":   True,
                         }).execute()
-
                     elif role == "industrial_supervisor":
                         db.table("attachment_supervisors").upsert({
                             "user_id":     user_id,
@@ -324,7 +341,6 @@ def add_user():
                             "employer_id": employer_id or None,
                             "is_active":   True,
                         }).execute()
-
                     elif role == "external_verifier":
                         db.table("ev_verifiers").upsert({
                             "user_id":      user_id,
@@ -333,7 +349,6 @@ def add_user():
                             "organization": organization or None,
                             "is_active":    True,
                         }).execute()
-
                     elif role == "quality_assurance":
                         db.table("qa_officers").upsert({
                             "user_id":      user_id,
@@ -345,8 +360,14 @@ def add_user():
 
                     write_audit_log("create_user", target=email,
                                     detail={"role": role, "dept_id": dept_id})
-                    flash(f"{full_name} ({role.replace('_',' ').title()}) created successfully.", "success")
-                    return redirect(url_for("super_admin.users"))
+
+                    # Show the temp password to the super admin — do NOT redirect
+                    created_user = {
+                        "name":          full_name,
+                        "email":         email,
+                        "role":          role.replace("_", " ").title(),
+                        "temp_password": temp_password,
+                    }
 
                 except Exception as exc:
                     error = f"Profile save failed: {exc}"
@@ -359,7 +380,8 @@ def add_user():
 
     return render_template("super_admin/add_user.html",
                            all_roles=ALL_ROLES, depts=depts,
-                           employers=employers, error=error)
+                           employers=employers, error=error,
+                           created_user=created_user)
 
 
 # ── System Logs ───────────────────────────────────────────────────────────────
