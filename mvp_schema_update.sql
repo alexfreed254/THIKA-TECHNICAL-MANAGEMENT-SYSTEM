@@ -250,7 +250,6 @@ CREATE POLICY employer_users_own ON employer_users
 -- 7. UPDATE current_user_role FUNCTION to include employer
 -- ============================================================
 
-DROP FUNCTION IF EXISTS current_user_role();
 CREATE OR REPLACE FUNCTION current_user_role()
 RETURNS TEXT LANGUAGE sql STABLE SECURITY DEFINER AS $$
     SELECT role FROM user_profiles WHERE id = auth.uid();
