@@ -627,7 +627,6 @@ def students():
                             "class_id": class_id,
                             "user_id": user_id,
                             "email": email,
-                            "is_active": True,
                         }).execute()
                         
                         # Upsert user profile
