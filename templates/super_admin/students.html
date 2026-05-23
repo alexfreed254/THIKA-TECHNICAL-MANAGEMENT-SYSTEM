@@ -2,30 +2,74 @@
 {% block title %}Students{% endblock %}
 {% block page_title %}Manage Students{% endblock %}
 {% block extra_style %}
-.page-wrap{padding:24px}.card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:24px;overflow:hidden}.card-header{background:#7b1fa2;color:#fff;padding:14px 20px;font-size:14px;font-weight:600}.card-body{padding:20px}.form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.form-group label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:5px}.form-group input,.form-group select{width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:6px;font-size:13px}.btn{padding:9px 18px;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600}.btn-primary{background:#7b1fa2;color:#fff}.btn-danger{background:#c62828;color:#fff;padding:5px 12px;font-size:12px}.error-box{background:#ffebee;color:#c62828;border-radius:6px;padding:10px 14px;font-size:13px;margin-bottom:16px}table{width:100%;border-collapse:collapse}th{background:#f5f5f5;padding:11px 14px;text-align:left;font-size:12px;color:#555;border-bottom:2px solid #eee}td{padding:11px 14px;border-bottom:1px solid #f0f0f0;font-size:13px}
+.page-wrap{padding:32px;max-width:900px;margin:0 auto}.card{background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.08);margin-bottom:24px;overflow:hidden;border:1px solid #f0f0f0}.card-header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:20px 24px;font-size:16px;font-weight:700}.card-body{padding:32px}.form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}.form-group{display:flex;flex-direction:column;gap:8px}.form-group label{font-size:13px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px}.form-group input,.form-group select{padding:14px 18px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;transition:all 0.2s;outline:none;background:#fafafa;font-family:inherit}.form-group input:focus,.form-group select:focus{border-color:#667eea;box-shadow:0 0 0 4px rgba(102,126,234,.1);background:#fff}.btn{padding:14px 28px;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:700;transition:all 0.2s;font-family:inherit}.btn-primary{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;box-shadow:0 4px 12px rgba(102,126,234,.3)}.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(102,126,234,.4)}.btn-danger{background:#dc2626;color:#fff;padding:8px 16px;font-size:13px}.error-box{background:#fef2f2;color:#dc2626;border:2px solid #fecaca;border-radius:10px;padding:14px 18px;font-size:14px;margin-bottom:20px;display:flex;align-items:center;gap:10px}.success-box{background:#ecfdf5;border:2px solid #6ee7b7;border-radius:12px;padding:20px 24px;margin-bottom:24px}.success-box h3{color:#065f46;font-size:16px;font-weight:700;margin:0 0 16px}.success-row{display:grid;grid-template-columns:auto 1fr;gap:10px 20px;font-size:14px}.success-row span:first-child{color:#6b7280;font-weight:600}.success-row span:last-child{color:#065f46;font-weight:700}.password-code{background:#fff;border:2px solid #6ee7b7;padding:8px 16px;border-radius:8px;font-size:16px;font-weight:800;letter-spacing:2px;color:#065f46}table{width:100%;border-collapse:collapse}th{background:#f9fafb;padding:14px 16px;text-align:left;font-size:13px;color:#374151;font-weight:600;border-bottom:2px solid #e5e7eb}td{padding:14px 16px;border-bottom:1px solid #f0f0f0;font-size:14px}
 {% endblock %}
 {% block content %}
 <div class="page-wrap">
-  <div class="card">
-    <div class="card-header"><i class="fas fa-plus"></i> Add Student</div>
+  {% if created_student %}
+  <div class="card" style="border:2px solid #10b981;">
+    <div class="card-header" style="background:linear-gradient(135deg,#059669,#10b981);">
+      <i class="fas fa-check-circle"></i> Student Created Successfully
+    </div>
     <div class="card-body">
-      {% if error %}<div class="error-box">{{ error }}</div>{% endif %}
+      <p style="font-size:15px;color:#374151;margin-bottom:24px;line-height:1.6;">
+        Share the credentials below with <strong>{{ created_student.full_name }}</strong>.
+        They will be required to change their password on first login.
+      </p>
+      <div class="success-box">
+        <div class="success-row">
+          <span>Admission Number</span>
+          <span>{{ created_student.admission_number }}</span>
+          <span>Full Name</span>
+          <span>{{ created_student.full_name }}</span>
+          <span>Class</span>
+          <span>{{ created_student.class_name }}</span>
+          <span>Temporary Password</span>
+          <span style="display:flex;align-items:center;gap:12px;">
+            <code class="password-code">{{ created_student.temp_password }}</code>
+            <button onclick="copyPassword()" style="padding:8px 16px;background:#10b981;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">
+              <i class="fas fa-copy"></i> Copy
+            </button>
+          </span>
+        </div>
+      </div>
+      <div style="background:#fef3c7;border:2px solid #fcd34d;border-radius:10px;padding:14px 18px;font-size:14px;color:#92400e;display:flex;gap:12px;align-items:flex-start;">
+        <i class="fas fa-exclamation-triangle" style="margin-top:2px;flex-shrink:0;"></i>
+        <span style="line-height:1.5;">This password is shown <strong>only once</strong>. Copy it now and share it securely with the student.</span>
+      </div>
+      <div style="margin-top:24px;display:flex;gap:14px;flex-wrap:wrap;">
+        <a href="/super-admin/students" style="padding:12px 24px;background:#667eea;color:#fff;border-radius:10px;text-decoration:none;font-size:14px;font-weight:600;">
+          <i class="fas fa-plus"></i> Add Another Student
+        </a>
+        <a href="/super-admin/students" style="padding:12px 24px;background:#f9fafb;color:#374151;border-radius:10px;text-decoration:none;font-size:14px;font-weight:600;border:2px solid #e5e7eb;">
+          <i class="fas fa-list"></i> View All Students
+        </a>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="card">
+    <div class="card-header"><i class="fas fa-user-plus"></i> Add Student</div>
+    <div class="card-body">
+      {% if error %}<div class="error-box"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>{% endif %}
       <form method="post">
         <input type="hidden" name="action" value="create">
         <div class="form-row">
-          <div class="form-group"><label>Admission No.</label><input type="text" name="admission_number" required></div>
-          <div class="form-group"><label>Full Name</label><input type="text" name="full_name" required></div>
-          <div class="form-group"><label>Class</label>
+          <div class="form-group"><label>Admission No. <span style="color:red">*</span></label><input type="text" name="admission_number" placeholder="e.g. TTI/2024/001" required></div>
+          <div class="form-group"><label>Full Name <span style="color:red">*</span></label><input type="text" name="full_name" placeholder="e.g. John Kamau" required></div>
+          <div class="form-group"><label>Class <span style="color:red">*</span></label>
             <select name="class_id" required>
               <option value="">-- Select --</option>
               {% for c in classes %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
             </select>
           </div>
         </div>
-        <div style="margin-top:14px"><button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Add Student</button></div>
+        <div style="margin-top:20px"><button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Add Student</button></div>
       </form>
     </div>
   </div>
+  {% endif %}
+  
   <div class="card">
     <div class="card-header"><i class="fas fa-list"></i> Students ({{ students|length }})</div>
     <table><thead><tr><th>#</th><th>Adm No.</th><th>Name</th><th>Class</th><th>Action</th></tr></thead>
@@ -48,4 +92,15 @@
     </tbody></table>
   </div>
 </div>
+
+<script>
+function copyPassword() {
+  var pw = document.querySelector('.password-code').textContent.trim();
+  navigator.clipboard.writeText(pw).then(function() {
+    var btn = event.target.closest('button');
+    btn.innerHTML = '<i class="fas fa-check"></i> Copied';
+    setTimeout(function(){ btn.innerHTML = '<i class="fas fa-copy"></i> Copy'; }, 2000);
+  });
+}
+</script>
 {% endblock %}

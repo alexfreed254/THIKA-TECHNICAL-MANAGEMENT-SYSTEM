@@ -597,6 +597,7 @@ def units():
 def students():
     db = _svc()
     error = None
+    created_student = None  # holds {admission_number, full_name, class_name, temp_password} after success
 
     if request.method == "POST":
         action = request.form.get("action", "create")
@@ -608,14 +609,49 @@ def students():
                 error = "Admission number, name and class are required."
             else:
                 try:
-                    db.table("students").insert({
-                        "admission_number": adm,
-                        "full_name": name,
-                        "class_id": class_id,
-                    }).execute()
-                    write_audit_log("create_student", target=adm)
-                    flash("Student added.", "success")
-                    return redirect(url_for("super_admin.students"))
+                    # Generate email from admission number
+                    email = f"{adm.lower().replace('/', '_')}@ttie.ac.ke"
+                    
+                    # Generate temporary password
+                    temp_password = _generate_temp_password()
+                    
+                    # Create auth user
+                    user_id, err = _create_auth_user(email, temp_password, name, "student")
+                    if err:
+                        error = f"Could not create auth user: {err}"
+                    else:
+                        # Insert student record
+                        db.table("students").insert({
+                            "admission_number": adm,
+                            "full_name": name,
+                            "class_id": class_id,
+                            "user_id": user_id,
+                            "email": email,
+                            "is_active": True,
+                        }).execute()
+                        
+                        # Upsert user profile
+                        db.table("user_profiles").upsert({
+                            "id": user_id,
+                            "full_name": name,
+                            "role": "student",
+                            "is_active": True,
+                            "must_change_password": True,
+                        }).execute()
+                        
+                        # Get class name for display
+                        class_data = db.table("classes").select("name").eq("id", class_id).execute().data or []
+                        class_name = class_data[0]["name"] if class_data else "N/A"
+                        
+                        write_audit_log("create_student", target=adm)
+                        
+                        # Show the temp password to the super admin — do NOT redirect
+                        created_student = {
+                            "admission_number": adm,
+                            "full_name": name,
+                            "class_name": class_name,
+                            "temp_password": temp_password,
+                        }
                 except Exception as exc:
                     error = f"Error: {exc}"
         elif action == "delete":
@@ -652,6 +688,7 @@ def students():
     return render_template("super_admin/students.html",
                            students=students_list, depts=depts,
                            classes=classes, error=error,
+                           created_student=created_student,
                            search=search, dept_filter=dept_filter)
 
 
