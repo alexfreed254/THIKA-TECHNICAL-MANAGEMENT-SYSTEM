@@ -142,3 +142,4 @@ E-Portfolio features are mounted through the portfolio blueprint under the same 
 - `combined_supabase.sql` is the single canonical SQL file for all current database setup.
 
 # THIKA-TECHNICAL-MANAGEMENT-SYSTEM
+# THIKA-TECHNICAL-MANAGEMENT-SYSTEM
