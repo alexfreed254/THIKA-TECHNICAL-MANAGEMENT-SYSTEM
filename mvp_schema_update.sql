@@ -247,7 +247,66 @@ CREATE POLICY employer_users_own ON employer_users
     WITH CHECK (user_id = auth.uid() AND current_user_active());
 
 -- ============================================================
--- 7. UPDATE current_user_role FUNCTION to include employer
+-- 7. CREATE clearance_requests TABLE (if not exists)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS clearance_requests (
+    id                      SERIAL PRIMARY KEY,
+    student_id              INT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    department_id           INT REFERENCES departments(id) ON DELETE SET NULL,
+    status                  VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','dept_cleared','finance_cleared','registrar_cleared','completed','rejected')),
+    dept_cleared_by         UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    dept_cleared_at         TIMESTAMPTZ,
+    finance_cleared_by      UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    finance_cleared_at      TIMESTAMPTZ,
+    registrar_cleared_by    UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    registrar_cleared_at    TIMESTAMPTZ,
+    principal_signed_by     UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    principal_signed_at     TIMESTAMPTZ,
+    comment                 TEXT,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TRIGGER trg_clearance_requests_updated_at
+    BEFORE UPDATE ON clearance_requests
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+ALTER TABLE clearance_requests ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY clearance_super_admin ON clearance_requests
+    FOR ALL TO authenticated
+    USING (current_user_role() = 'super_admin' AND current_user_active())
+    WITH CHECK (current_user_role() = 'super_admin' AND current_user_active());
+
+CREATE POLICY clearance_student_own ON clearance_requests
+    FOR ALL TO authenticated
+    USING (
+        current_user_active()
+        AND current_user_role() = 'student'
+        AND student_id IN (SELECT id FROM students WHERE user_id = auth.uid())
+    )
+    WITH CHECK (
+        current_user_active()
+        AND current_user_role() = 'student'
+        AND student_id IN (SELECT id FROM students WHERE user_id = auth.uid())
+    );
+
+CREATE POLICY clearance_dept_admin ON clearance_requests
+    FOR ALL TO authenticated
+    USING (
+        current_user_active()
+        AND current_user_role() = 'dept_admin'
+        AND department_id = current_user_dept()
+    )
+    WITH CHECK (
+        current_user_active()
+        AND current_user_role() = 'dept_admin'
+        AND department_id = current_user_dept()
+    );
+
+-- ============================================================
+-- 8. UPDATE current_user_role FUNCTION to include employer
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION current_user_role()
@@ -256,7 +315,7 @@ RETURNS TEXT LANGUAGE sql STABLE SECURITY DEFINER AS $$
 $$;
 
 -- ============================================================
--- 8. CREATE INDEXES for performance
+-- 9. CREATE INDEXES for performance
 -- ============================================================
 
 CREATE INDEX IF NOT EXISTS idx_assessments_trainee ON assessments(trainee_id);
@@ -271,8 +330,12 @@ CREATE INDEX IF NOT EXISTS idx_evidence_type ON evidence(file_type);
 CREATE INDEX IF NOT EXISTS idx_recommendations_trainee ON employer_recommendations(trainee_id);
 CREATE INDEX IF NOT EXISTS idx_recommendations_employer ON employer_recommendations(employer_id);
 
+CREATE INDEX IF NOT EXISTS idx_clearance_student ON clearance_requests(student_id);
+CREATE INDEX IF NOT EXISTS idx_clearance_department ON clearance_requests(department_id);
+CREATE INDEX IF NOT EXISTS idx_clearance_status ON clearance_requests(status);
+
 -- ============================================================
--- 9. ADD COMMENTS
+-- 10. ADD COMMENTS
 -- ============================================================
 
 COMMENT ON TABLE assessments IS 'Trainee assessments with approval workflow';
@@ -284,3 +347,6 @@ COMMENT ON COLUMN evidence.geolocation_lat IS 'Latitude coordinate for GIS mappi
 COMMENT ON COLUMN evidence.geolocation_lng IS 'Longitude coordinate for GIS mapping';
 
 COMMENT ON TABLE employer_recommendations IS 'Recommendations from employers for trainees';
+
+COMMENT ON TABLE clearance_requests IS 'Student clearance workflow: department, finance, registrar, principal sign-offs';
+COMMENT ON COLUMN clearance_requests.status IS 'Clearance status: pending, dept_cleared, finance_cleared, registrar_cleared, completed, rejected';
