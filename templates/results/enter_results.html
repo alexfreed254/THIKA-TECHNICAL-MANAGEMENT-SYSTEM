@@ -92,9 +92,9 @@
             <th class="table-th w-8">#</th>
             <th class="table-th">Adm No.</th>
             <th class="table-th">Student Name</th>
-            <th class="table-th w-24 text-center">CAT (/30)</th>
-            <th class="table-th w-24 text-center">Exam (/50)</th>
-            <th class="table-th w-24 text-center">Practical (/20)</th>
+            <th class="table-th w-28 text-center">Formative Oral (/100)</th>
+            <th class="table-th w-28 text-center">Formative Theory (/100)</th>
+            <th class="table-th w-28 text-center">Formative Practical (/100)</th>
             <th class="table-th w-20 text-center">Total</th>
             <th class="table-th w-16 text-center">Grade</th>
           </tr>
@@ -108,18 +108,18 @@
             <td class="table-td font-mono font-bold text-blue-700">{{ s.admission_number }}</td>
             <td class="table-td font-medium">{{ s.full_name }}</td>
             <td class="table-td text-center">
-              <input type="number" name="cat_{{ s.id }}" class="form-input text-xs text-center py-1 w-20"
-                     min="0" max="30" step="0.5" value="{{ ex.cat_score or '' }}"
+              <input type="number" name="oral_{{ s.id }}" class="form-input text-xs text-center py-1 w-20"
+                     min="0" max="100" step="0.5" value="{{ ex.formative_oral_score or '' }}"
                      oninput="calcTotal({{ s.id }})">
             </td>
             <td class="table-td text-center">
-              <input type="number" name="exam_{{ s.id }}" class="form-input text-xs text-center py-1 w-20"
-                     min="0" max="50" step="0.5" value="{{ ex.exam_score or '' }}"
+              <input type="number" name="theory_{{ s.id }}" class="form-input text-xs text-center py-1 w-20"
+                     min="0" max="100" step="0.5" value="{{ ex.formative_theory_score or '' }}"
                      oninput="calcTotal({{ s.id }})">
             </td>
             <td class="table-td text-center">
-              <input type="number" name="prac_{{ s.id }}" class="form-input text-xs text-center py-1 w-20"
-                     min="0" max="20" step="0.5" value="{{ ex.practical_score or '' }}"
+              <input type="number" name="practical_{{ s.id }}" class="form-input text-xs text-center py-1 w-20"
+                     min="0" max="100" step="0.5" value="{{ ex.formative_practical_score or '' }}"
                      oninput="calcTotal({{ s.id }})">
             </td>
             <td class="table-td text-center">
@@ -167,10 +167,10 @@ const grades = score => {
 const gradeColors = { A:'text-green-700', B:'text-blue-700', C:'text-yellow-700', D:'text-orange-700', E:'text-red-700' };
 
 function calcTotal(sid) {
-  const cat  = parseFloat(document.querySelector(`[name="cat_${sid}"]`).value) || 0;
-  const exam = parseFloat(document.querySelector(`[name="exam_${sid}"]`).value) || 0;
-  const prac = parseFloat(document.querySelector(`[name="prac_${sid}"]`).value) || 0;
-  const total = Math.round((cat + exam + prac) * 10) / 10;
+  const oral = parseFloat(document.querySelector(`[name="oral_${sid}"]`).value) || 0;
+  const theory = parseFloat(document.querySelector(`[name="theory_${sid}"]`).value) || 0;
+  const practical = parseFloat(document.querySelector(`[name="practical_${sid}"]`).value) || 0;
+  const total = Math.round((oral + theory + practical) * 10) / 10;
   const grade = grades(total);
   const tEl = document.getElementById('total_' + sid);
   const gEl = document.getElementById('grade_' + sid);

@@ -16,7 +16,7 @@ app.secret_key = app.config.get("SECRET_KEY", "dev-secret-change-in-production")
 
 # ── Session / Cookie config ───────────────────────────────────────────────────
 app.config["SESSION_COOKIE_SAMESITE"]    = "Lax"   # "None" requires HTTPS everywhere
-app.config["SESSION_COOKIE_SECURE"]      = False    # Set True when behind HTTPS on Render
+app.config["SESSION_COOKIE_SECURE"]      = os.environ.get("FLASK_ENV") == "production"  # True in production
 app.config["SESSION_COOKIE_HTTPONLY"]    = True
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=1)
 

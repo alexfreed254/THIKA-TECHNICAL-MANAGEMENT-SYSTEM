@@ -31,9 +31,10 @@ def portfolio_trainer_dashboard():
         flash("Trainer profile missing.", "error")
         return redirect(url_for("lecturer.dashboard"))
 
+    trainer_id = trainer.get("user_id") or trainer.get("id")
     assignments = (db.table("trainer_assignments")
                     .select("unit_id, class_id")
-                    .eq("trainer_id", trainer["user_id"] if "user_id" in trainer else trainer["id"]) 
+                    .eq("trainer_id", trainer_id) 
                     .execute().data or [])
 
     unit_ids = list({a["unit_id"] for a in assignments if a.get("unit_id")})
@@ -74,9 +75,10 @@ def portfolio_review(assessment_id: int):
 
     # Enforce that this trainer is assigned to the assessment's unit.
     # (Dept Admin/HOD assign the unit in trainer_assignments; prevents trainers reviewing others.)
+    trainer_id = trainer.get("user_id") or trainer.get("id")
     assignments_check = (db.table("trainer_assignments")
                              .select("id")
-                             .eq("trainer_id", trainer.get("user_id") or trainer.get("id"))
+                             .eq("trainer_id", trainer_id)
                              .eq("unit_id", a.get("unit_id"))
                              .limit(1)
                              .execute().data or [])
@@ -99,9 +101,10 @@ def portfolio_review(assessment_id: int):
         }
         new_status = status_map[action]
 
+        from utils import now_eat
         db.table("assessments").update({
             "status": new_status,
-            "reviewed_at": datetime.utcnow().isoformat(),
+            "reviewed_at": now_eat().isoformat(),
             "reviewer_comments": comments or None,
         }).eq("id", assessment_id).execute()
 

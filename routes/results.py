@@ -98,10 +98,20 @@ def enter_results():
         saved = 0
         for sid_str in student_ids:
             sid = int(sid_str)
-            cat    = request.form.get(f"cat_{sid}", type=float)
-            exam   = request.form.get(f"exam_{sid}", type=float)
-            prac   = request.form.get(f"prac_{sid}", type=float)
-            total  = round(sum(filter(None, [cat, exam, prac])), 2)
+            oral    = request.form.get(f"oral_{sid}", type=float)
+            theory  = request.form.get(f"theory_{sid}", type=float)
+            practical = request.form.get(f"practical_{sid}", type=float)
+            
+            # Validate scores are within valid range (0-100)
+            for score_name, score_val in [("Formative Oral", oral), ("Formative Theory", theory), ("Formative Practical", practical)]:
+                if score_val is not None and (score_val < 0 or score_val > 100):
+                    error = f"Invalid {score_name} score for student {sid}: must be between 0 and 100"
+                    break
+            
+            if error:
+                break
+            
+            total  = round(sum(filter(None, [oral, theory, practical])), 2)
             grade  = _compute_grade(total)
             remark = _compute_remark(grade)
 
@@ -114,9 +124,9 @@ def enter_results():
                     "exam_series_id": series_id,
                     "year":           year,
                     "term":           term,
-                    "cat_score":      cat,
-                    "exam_score":     exam,
-                    "practical_score": prac,
+                    "formative_oral_score": oral,
+                    "formative_theory_score": theory,
+                    "formative_practical_score": practical,
                     "total_score":    total,
                     "grade":          grade,
                     "remarks":        remark,
@@ -184,10 +194,17 @@ def upload_excel():
                         continue
                     try:
                         adm_no = str(r[0]).strip()
-                        cat    = float(r[1]) if r[1] is not None else None
-                        exam   = float(r[2]) if r[2] is not None else None
-                        prac   = float(r[3]) if r[3] is not None else None
-                        total  = round(sum(filter(None, [cat, exam, prac])), 2)
+                        oral    = float(r[1]) if r[1] is not None else None
+                        theory   = float(r[2]) if r[2] is not None else None
+                        practical = float(r[3]) if r[3] is not None else None
+                        
+                        # Validate scores are within valid range (0-100)
+                        for score_name, score_val in [("Formative Oral", oral), ("Formative Theory", theory), ("Formative Practical", practical)]:
+                            if score_val is not None and (score_val < 0 or score_val > 100):
+                                errors.append(f"{adm_no}: Invalid {score_name} score - must be between 0 and 100")
+                                break
+                        
+                        total  = round(sum(filter(None, [oral, theory, practical])), 2)
                         grade  = _compute_grade(total)
                         remark = _compute_remark(grade)
 
@@ -207,9 +224,9 @@ def upload_excel():
                             "exam_series_id": series_id,
                             "year":           year,
                             "term":           term,
-                            "cat_score":      cat,
-                            "exam_score":     exam,
-                            "practical_score": prac,
+                            "formative_oral_score": oral,
+                            "formative_theory_score": theory,
+                            "formative_practical_score": practical,
                             "total_score":    total,
                             "grade":          grade,
                             "remarks":        remark,

@@ -81,9 +81,9 @@
           <th class="table-th">#</th>
           <th class="table-th">Adm No.</th>
           <th class="table-th">Student Name</th>
-          <th class="table-th text-center">CAT</th>
-          <th class="table-th text-center">Exam</th>
-          <th class="table-th text-center">Practical</th>
+          <th class="table-th text-center">Formative Oral</th>
+          <th class="table-th text-center">Formative Theory</th>
+          <th class="table-th text-center">Formative Practical</th>
           <th class="table-th text-center">Total</th>
           <th class="table-th text-center">Grade</th>
           <th class="table-th text-center">Remarks</th>
@@ -95,9 +95,9 @@
           <td class="table-td text-gray-400">{{ loop.index }}</td>
           <td class="table-td font-mono font-bold text-blue-700">{{ (r.students or {}).get('admission_number','—') }}</td>
           <td class="table-td font-medium">{{ (r.students or {}).get('full_name','—') }}</td>
-          <td class="table-td text-center">{{ r.cat_score if r.cat_score is not none else '—' }}</td>
-          <td class="table-td text-center">{{ r.exam_score if r.exam_score is not none else '—' }}</td>
-          <td class="table-td text-center">{{ r.practical_score if r.practical_score is not none else '—' }}</td>
+          <td class="table-td text-center">{{ r.formative_oral_score if r.formative_oral_score is not none else '—' }}</td>
+          <td class="table-td text-center">{{ r.formative_theory_score if r.formative_theory_score is not none else '—' }}</td>
+          <td class="table-td text-center">{{ r.formative_practical_score if r.formative_practical_score is not none else '—' }}</td>
           <td class="table-td text-center font-bold">{{ r.total_score if r.total_score is not none else '—' }}</td>
           <td class="table-td text-center">
             <span class="inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm

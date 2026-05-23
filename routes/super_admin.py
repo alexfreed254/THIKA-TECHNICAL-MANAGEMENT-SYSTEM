@@ -285,6 +285,7 @@ def add_user():
         role         = request.form.get("role", "").strip()
         full_name    = request.form.get("full_name", "").strip()
         email        = request.form.get("email", "").strip().lower()
+        admission_number = request.form.get("admission_number", "").strip()
         dept_id      = request.form.get("department_id", type=int)
         phone        = request.form.get("phone", "").strip()
         employer_id  = request.form.get("employer_id", type=int)
@@ -293,8 +294,16 @@ def add_user():
         valid_roles = [r[0] for r in ALL_ROLES]
         if role not in valid_roles:
             error = "Please select a valid role."
-        elif not full_name or not email:
-            error = "Full name and email are required."
+        elif not full_name:
+            error = "Full name is required."
+        elif role == "student":
+            if not admission_number:
+                error = "Admission number is required for students."
+            # For students, generate email from admission number if not provided
+            if not email:
+                email = f"{admission_number.lower().replace('/', '_')}@ttie.ac.ke"
+        elif not email:
+            error = "Email address is required for this role."
         else:
             # Always auto-generate the temporary password
             temp_password = _generate_temp_password()
@@ -315,7 +324,15 @@ def add_user():
                     }).execute()
 
                     # Role-specific secondary table inserts
-                    if role == "trainer":
+                    if role == "student":
+                        db.table("students").upsert({
+                            "user_id":           user_id,
+                            "full_name":         full_name,
+                            "admission_number":  admission_number,
+                            "email":             email,
+                            "is_active":         True,
+                        }).execute()
+                    elif role == "trainer":
                         username = request.form.get("username", email.split("@")[0]).strip()
                         db.table("trainers").insert({
                             "user_id":       user_id,
@@ -358,13 +375,13 @@ def add_user():
                             "is_active":    True,
                         }).execute()
 
-                    write_audit_log("create_user", target=email,
+                    write_audit_log("create_user", target=email if role != "student" else admission_number,
                                     detail={"role": role, "dept_id": dept_id})
 
                     # Show the temp password to the super admin — do NOT redirect
                     created_user = {
                         "name":          full_name,
-                        "email":         email,
+                        "email":         email if role != "student" else admission_number,
                         "role":          role.replace("_", " ").title(),
                         "temp_password": temp_password,
                     }

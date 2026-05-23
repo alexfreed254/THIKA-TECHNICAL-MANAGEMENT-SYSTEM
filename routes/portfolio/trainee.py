@@ -54,9 +54,10 @@ def portfolio_trainee_dashboard():
         flash("Student profile missing.", "error")
         return redirect(url_for("student.dashboard"))
 
+    trainee_id = student.get("user_id") or student.get("id")
     assessments = (db.table("assessments")
                      .select("*, units(name, code), classes(name)")
-                     .eq("trainee_id", student["user_id"] if "user_id" in student else student["id"])  # tolerate schemas
+                     .eq("trainee_id", trainee_id)
                      .order("uploaded_at", desc=True)
                      .execute().data or [])
 
@@ -98,8 +99,9 @@ def portfolio_upload():
         script_filename = secure_filename(script.filename)
 
         # Insert assessment record
+        trainee_id = student.get("user_id") or student.get("id")
         ins = db.table("assessments").insert({
-            "trainee_id": student["user_id"] if "user_id" in student else student["id"],
+            "trainee_id": trainee_id,
             "unit_id": unit_id,
             "class_id": class_id,
             "assessment_type": assessment_type,
