@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Upload Assessment{% endblock %}
+{% block page_title %}Upload Assessment{% endblock %}
+
+{% block extra_style %}
+.page-wrap { padding: 32px; max-width: 900px; margin: 0 auto; }
+.card { background:#fff; border-radius:16px; box-shadow:0 4px 24px rgba(0,0,0,.08); overflow:hidden; margin-bottom:24px; border:1px solid #f0f0f0; }
+.card-header { padding:20px 24px; font-size:16px; font-weight:700; color:#fff; background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); display:flex; align-items:center; gap:12px; letter-spacing:0.5px; }
+.card-body { padding:32px; }
+.form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px; }
+.field { display:flex; flex-direction:column; gap:8px; }
+.field label { font-size:13px; font-weight:600; color:#374151; text-transform:uppercase; letter-spacing:0.5px; }
+.field input, .field select { padding:14px 18px; border:2px solid #e5e7eb; border-radius:10px; font-size:14px; transition:all 0.2s; outline:none; background:#fafafa; font-family:inherit; }
+.field input:focus, .field select:focus { border-color:#667eea; box-shadow:0 0 0 4px rgba(102,126,234,.1); background:#fff; }
+.btn { padding:14px 28px; border:none; border-radius:10px; cursor:pointer; font-size:14px; font-weight:700; transition:all 0.2s; font-family:inherit; }
+.btn-primary { background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:#fff; box-shadow:0 4px 12px rgba(102,126,234,.3); }
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(102,126,234,.4); }
+.alert-error { background:#fef2f2; color:#dc2626; border:2px solid #fecaca; border-radius:10px; padding:14px 18px; font-size:14px; margin-bottom:20px; display:flex; align-items:center; gap:10px; }
+.alert-success { background:#ecfdf5; color:#065f46; border:2px solid #6ee7b7; border-radius:10px; padding:14px 18px; font-size:14px; margin-bottom:20px; display:flex; align-items:center; gap:10px; }
+.file-upload { border:2px dashed #e5e7eb; border-radius:10px; padding:32px; text-align:center; cursor:pointer; transition:all 0.2s; }
+.file-upload:hover { border-color:#667eea; background:#f5f3ff; }
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+  <div class="card">
+    <div class="card-header">
+      <i class="fas fa-upload"></i> Upload Assessment
+    </div>
+    <div class="card-body">
+      
+      {% if error %}
+      <div class="alert-error"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>
+      {% endif %}
+      
+      {% if success %}
+      <div class="alert-success"><i class="fas fa-check-circle"></i> {{ success }}</div>
+      {% endif %}
+      
+      <form method="post" enctype="multipart/form-data">
+        <div class="form-grid">
+          <div class="field">
+            <label>Unit <span style="color:red">*</span></label>
+            <select name="unit_id" required>
+              <option value="">-- Select Unit --</option>
+              {% for u in units %}
+              <option value="{{ u.unit_id }}">{{ u.units.code }} - {{ u.units.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          
+          <div class="field">
+            <label>Assessment Type <span style="color:red">*</span></label>
+            <select name="assessment_type" required>
+              <option value="">-- Select Type --</option>
+              <option value="formative_oral">Formative Assessment - Oral</option>
+              <option value="formative_theory">Formative Assessment - Theory</option>
+              <option value="formative_practical">Formative Assessment - Practical</option>
+              <option value="summative">Summative Assessment</option>
+              <option value="project">Project</option>
+              <option value="internship">Internship</option>
+            </select>
+          </div>
+          
+          <div class="field">
+            <label>Year</label>
+            <input type="number" name="year" value="{{ current_year }}" min="2020" max="2030">
+          </div>
+          
+          <div class="field">
+            <label>Term</label>
+            <select name="term">
+              <option value="1">Term 1</option>
+              <option value="2">Term 2</option>
+              <option value="3">Term 3</option>
+            </select>
+          </div>
+          
+          <div class="field">
+            <label>Cycle</label>
+            <input type="number" name="cycle" placeholder="Optional" min="1">
+          </div>
+        </div>
+        
+        <div class="field" style="margin-top:20px;">
+          <label>Evidence Files (PDF, Images, Videos)</label>
+          <div class="file-upload" onclick="document.getElementById('evidenceFiles').click()">
+            <i class="fas fa-cloud-upload-alt" style="font-size:48px; color:#9ca3af; margin-bottom:16px;"></i>
+            <p style="color:#6b7280; margin:0;">Click to upload or drag and drop</p>
+            <p style="color:#9ca3af; font-size:12px; margin:8px 0 0;">Supported: PDF, JPG, PNG, MP4</p>
+            <input type="file" name="evidence_files" id="evidenceFiles" multiple accept=".pdf,.jpg,.jpeg,.png,.gif,.mp4,.mov,.avi" style="display:none;">
+          </div>
+        </div>
+        
+        <div style="margin-top:24px;">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-upload"></i> Upload Assessment
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

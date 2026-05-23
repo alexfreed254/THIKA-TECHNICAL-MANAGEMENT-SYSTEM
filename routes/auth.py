@@ -6,6 +6,9 @@ it is created automatically so the user is never locked out.
 """
 
 import traceback
+import secrets
+import string
+from datetime import datetime, timedelta
 from flask import (Blueprint, render_template, request,
                    session, redirect, url_for, jsonify)
 from db import get_anon_client, get_service_client
@@ -15,6 +18,93 @@ from auth_utils import (
 )
 
 auth_bp = Blueprint("auth", __name__)
+
+
+def _generate_temp_password(length=12):
+    """
+    Generate a secure temporary password with:
+    - At least 1 uppercase letter
+    - At least 1 lowercase letter
+    - At least 1 number
+    - At least 1 special character
+    """
+    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    while True:
+        password = ''.join(secrets.choice(alphabet) for _ in range(length))
+        if (any(c.isupper() for c in password) and
+            any(c.islower() for c in password) and
+            any(c.isdigit() for c in password) and
+            any(c in "!@#$%^&*" for c in password)):
+            return password
+
+
+def _validate_password_complexity(password):
+    """
+    Validate password meets complexity requirements:
+    - At least 8 characters
+    - At least 1 uppercase
+    - At least 1 lowercase
+    - At least 1 number
+    - At least 1 special character
+    """
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters."
+    if not any(c.isupper() for c in password):
+        return False, "Password must contain at least 1 uppercase letter."
+    if not any(c.islower() for c in password):
+        return False, "Password must contain at least 1 lowercase letter."
+    if not any(c.isdigit() for c in password):
+        return False, "Password must contain at least 1 number."
+    if not any(c in "!@#$%^&*" for c in password):
+        return False, "Password must contain at least 1 special character (!@#$%^&*)."
+    return True, None
+
+
+def _check_password_in_history(user_id, new_password, history_limit=3):
+    """
+    Check if new password is in the user's password history.
+    Returns True if password is in history (should be rejected).
+    """
+    try:
+        svc = get_service_client()
+        profile = svc.table("user_profiles").select("password_history").eq("id", user_id).limit(1).execute()
+        if not profile.data:
+            return False
+        
+        password_history = profile.data[0].get("password_history", [])
+        if not password_history:
+            return False
+        
+        # Check against last N passwords
+        recent_history = password_history[-history_limit:] if len(password_history) > history_limit else password_history
+        return new_password in recent_history
+    except Exception:
+        return False
+
+
+def _add_to_password_history(user_id, new_password, history_limit=3):
+    """
+    Add new password to user's password history, keeping only last N passwords.
+    """
+    try:
+        svc = get_service_client()
+        profile = svc.table("user_profiles").select("password_history").eq("id", user_id).limit(1).execute()
+        if not profile.data:
+            password_history = []
+        else:
+            password_history = profile.data[0].get("password_history", [])
+        
+        # Add new password
+        password_history.append(new_password)
+        
+        # Keep only last N passwords
+        if len(password_history) > history_limit:
+            password_history = password_history[-history_limit:]
+        
+        # Update profile
+        svc.table("user_profiles").update({"password_history": password_history}).eq("id", user_id).execute()
+    except Exception as exc:
+        print(f"[auth] Failed to add password to history: {exc}")
 
 
 def _get_user_id_by_email(email: str) -> str | None:
@@ -363,20 +453,29 @@ def change_password():
         new_pw  = request.form.get("new_password", "")
         confirm = request.form.get("confirm_password", "")
 
-        if len(new_pw) < 8:
-            error = "Password must be at least 8 characters."
+        # Validate password complexity
+        is_valid, validation_error = _validate_password_complexity(new_pw)
+        if not is_valid:
+            error = validation_error
         elif new_pw != confirm:
             error = "Passwords do not match."
+        elif _check_password_in_history(user["id"], new_pw):
+            error = "You cannot reuse your last 3 passwords. Please choose a different password."
         else:
             try:
                 svc = get_service_client()
                 # Update password via admin API (no need for old password)
                 svc.auth.admin.update_user_by_id(user["id"], {"password": new_pw})
 
-                # Clear the must_change_password flag
-                svc.table("user_profiles").update(
-                    {"must_change_password": False}
-                ).eq("id", user["id"]).execute()
+                # Add to password history
+                _add_to_password_history(user["id"], new_pw)
+
+                # Clear the must_change_password and is_temp_password flags
+                svc.table("user_profiles").update({
+                    "must_change_password": False,
+                    "is_temp_password": False,
+                    "temp_expires": None
+                }).eq("id", user["id"]).execute()
 
                 # Update session flag
                 session[SESSION_USER]["must_change_password"] = False

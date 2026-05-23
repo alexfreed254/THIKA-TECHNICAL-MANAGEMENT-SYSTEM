@@ -48,6 +48,8 @@ from routes.results       import results_bp
 from routes.clearance     import clearance_bp
 from routes.poe           import poe_bp
 from routes.notifications import notif_bp
+from routes.assessments    import assessments_bp
+from routes.employer       import employer_bp
 
 # E-Portfolio MVP integration (mounted under /portfolio)
 # Import sub-modules to register their routes onto portfolio_bp
@@ -70,6 +72,8 @@ app.register_blueprint(results_bp,     url_prefix="/results")
 app.register_blueprint(clearance_bp,   url_prefix="/clearance")
 app.register_blueprint(poe_bp,         url_prefix="/poe")
 app.register_blueprint(notif_bp,       url_prefix="/notifications")
+app.register_blueprint(assessments_bp, url_prefix="/assessments")
+app.register_blueprint(employer_bp,    url_prefix="/employer")
 
 # Register E-Portfolio blueprint once.
 from routes.portfolio import portfolio_bp

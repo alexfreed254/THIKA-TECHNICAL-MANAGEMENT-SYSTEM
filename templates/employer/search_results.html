@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Search Results{% endblock %}
+{% block page_title %}Search Results{% endblock %}
+
+{% block extra_style %}
+.page-wrap { padding: 32px; max-width: 1200px; margin: 0 auto; }
+.card { background:#fff; border-radius:16px; box-shadow:0 4px 24px rgba(0,0,0,.08); overflow:hidden; margin-bottom:24px; border:1px solid #f0f0f0; }
+.card-header { padding:20px 24px; font-size:16px; font-weight:700; color:#fff; background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); display:flex; align-items:center; gap:12px; letter-spacing:0.5px; }
+.card-body { padding:32px; }
+.btn { padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; transition:all 0.2s; text-decoration:none; display:inline-flex; align-items:center; gap:8px; }
+.btn-primary { background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:#fff; }
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(102,126,234,.3); }
+table { width:100%; border-collapse:collapse; }
+th { background:#f9fafb; padding:14px 16px; text-align:left; font-size:13px; color:#374151; font-weight:600; border-bottom:2px solid #e5e7eb; }
+td { padding:14px 16px; border-bottom:1px solid #f0f0f0; font-size:14px; }
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+  <div class="card">
+    <div class="card-header">
+      <i class="fas fa-search"></i> Search Results for "{{ query }}"
+    </div>
+    <div class="card-body">
+      
+      <div style="margin-bottom:20px;">
+        <a href="{{ url_for('employer.dashboard') }}" class="btn btn-primary">
+          <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+      </div>
+      
+      {% if trainees %}
+      <table>
+        <thead>
+          <tr>
+            <th>Admission No.</th>
+            <th>Name</th>
+            <th>Class</th>
+            <th>Department</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in trainees %}
+          <tr>
+            <td>{{ t.admission_number }}</td>
+            <td><strong>{{ t.full_name }}</strong></td>
+            <td>{{ t.classes.name if t.classes else '—' }}</td>
+            <td>{{ t.classes.departments.name if t.classes and t.classes.departments else '—' }}</td>
+            <td>
+              <a href="{{ url_for('employer.view_trainee', trainee_id=t.id) }}" class="btn btn-primary">
+                <i class="fas fa-eye"></i> View Portfolio
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div style="text-align:center; padding:48px; color:#9ca3af;">
+        <i class="fas fa-search" style="font-size:48px; margin-bottom:16px;"></i>
+        <p>No trainees found matching "{{ query }}".</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -29,19 +29,23 @@ def _svc():
     return get_service_client()
 
 
-def _generate_temp_password() -> str:
+def _generate_temp_password(length=12) -> str:
     """
-    Generates a readable temporary password:
-    3 uppercase + 3 digits + 3 lowercase + 2 symbols = 11 chars, always valid.
-    Example: KJM472xqp@#
+    Generate a secure temporary password with:
+    - At least 1 uppercase letter
+    - At least 1 lowercase letter
+    - At least 1 number
+    - At least 1 special character
+    - 12 characters total
     """
-    upper   = secrets.choice(string.ascii_uppercase) + secrets.choice(string.ascii_uppercase) + secrets.choice(string.ascii_uppercase)
-    digits  = ''.join(secrets.choice(string.digits) for _ in range(3))
-    lower   = ''.join(secrets.choice(string.ascii_lowercase) for _ in range(3))
-    symbols = secrets.choice("@#$!") + secrets.choice("@#$!")
-    parts   = list(upper + digits + lower + symbols)
-    secrets.SystemRandom().shuffle(parts)
-    return ''.join(parts)
+    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    while True:
+        password = ''.join(secrets.choice(alphabet) for _ in range(length))
+        if (any(c.isupper() for c in password) and
+            any(c.islower() for c in password) and
+            any(c.isdigit() for c in password) and
+            any(c in "!@#$%^&*" for c in password)):
+            return password
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -307,13 +311,17 @@ def add_user():
         else:
             # Always auto-generate the temporary password
             temp_password = _generate_temp_password()
+            
+            # Set temporary password expiration (7 days from now)
+            from datetime import datetime, timedelta
+            temp_expires = datetime.now() + timedelta(days=7)
 
             user_id, err = _create_auth_user(email, temp_password, full_name, role)
             if err:
                 error = f"Could not create auth user: {err}"
             else:
                 try:
-                    # Always upsert user_profiles — mark must_change_password = True
+                    # Always upsert user_profiles — mark must_change_password = True and set temp password flags
                     db.table("user_profiles").upsert({
                         "id":                   user_id,
                         "full_name":            full_name,
@@ -321,6 +329,8 @@ def add_user():
                         "department_id":        dept_id or None,
                         "is_active":            True,
                         "must_change_password": True,
+                        "is_temp_password":     True,
+                        "temp_expires":          temp_expires.isoformat(),
                     }).execute()
 
                     # Role-specific secondary table inserts
@@ -615,6 +625,10 @@ def students():
                     # Generate temporary password
                     temp_password = _generate_temp_password()
                     
+                    # Set temporary password expiration (7 days from now)
+                    from datetime import datetime, timedelta
+                    temp_expires = datetime.now() + timedelta(days=7)
+                    
                     # Create auth user
                     user_id, err = _create_auth_user(email, temp_password, name, "student")
                     if err:
@@ -629,13 +643,15 @@ def students():
                             "email": email,
                         }).execute()
                         
-                        # Upsert user profile
+                        # Upsert user profile with temp password flags
                         db.table("user_profiles").upsert({
                             "id": user_id,
                             "full_name": name,
                             "role": "student",
                             "is_active": True,
                             "must_change_password": True,
+                            "is_temp_password": True,
+                            "temp_expires": temp_expires.isoformat(),
                         }).execute()
                         
                         # Get class name for display

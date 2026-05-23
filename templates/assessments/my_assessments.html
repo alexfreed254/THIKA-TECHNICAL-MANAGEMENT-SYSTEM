@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}My Assessments{% endblock %}
+{% block page_title %}My Assessments{% endblock %}
+
+{% block extra_style %}
+.page-wrap { padding: 32px; max-width: 1200px; margin: 0 auto; }
+.card { background:#fff; border-radius:16px; box-shadow:0 4px 24px rgba(0,0,0,.08); overflow:hidden; margin-bottom:24px; border:1px solid #f0f0f0; }
+.card-header { padding:20px 24px; font-size:16px; font-weight:700; color:#fff; background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); display:flex; align-items:center; gap:12px; letter-spacing:0.5px; }
+.card-body { padding:32px; }
+.btn { padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; transition:all 0.2s; font-family:inherit; text-decoration:none; display:inline-flex; align-items:center; gap:8px; }
+.btn-primary { background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:#fff; }
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(102,126,234,.3); }
+table { width:100%; border-collapse:collapse; }
+th { background:#f9fafb; padding:14px 16px; text-align:left; font-size:13px; color:#374151; font-weight:600; border-bottom:2px solid #e5e7eb; }
+td { padding:14px 16px; border-bottom:1px solid #f0f0f0; font-size:14px; }
+.status-badge { padding:6px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+.status-pending { background:#fef3c7; color:#92400e; }
+.status-approved { background:#ecfdf5; color:#065f46; }
+.status-rejected { background:#fef2f2; color:#dc2626; }
+.status-needs_revision { background:#eff6ff; color:#1e40af; }
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+  <div class="card">
+    <div class="card-header">
+      <i class="fas fa-file-alt"></i> My Assessments
+    </div>
+    <div class="card-body">
+      <div style="margin-bottom:20px;">
+        <a href="{{ url_for('assessments.upload_assessment') }}" class="btn btn-primary">
+          <i class="fas fa-plus"></i> Upload New Assessment
+        </a>
+      </div>
+      
+      {% if assessments %}
+      <table>
+        <thead>
+          <tr>
+            <th>Unit</th>
+            <th>Type</th>
+            <th>Year/Term</th>
+            <th>Trainer</th>
+            <th>Status</th>
+            <th>Submitted</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in assessments %}
+          <tr>
+            <td><strong>{{ a.units.code }}</strong><br><span style="color:#6b7280;font-size:12px;">{{ a.units.name }}</span></td>
+            <td>{{ a.assessment_type|replace('_', ' ')|title }}</td>
+            <td>{{ a.year }} / Term {{ a.term }}</td>
+            <td>{{ a.trainers.name }}</td>
+            <td>
+              <span class="status-badge status-{{ a.status }}">{{ a.status|replace('_', ' ')|title }}</span>
+            </td>
+            <td>{{ a.submitted_at|strftime('%Y-%m-%d %H:%M') if a.submitted_at else '-' }}</td>
+            <td>
+              <a href="{{ url_for('assessments.view_assessment', assessment_id=a.id) }}" class="btn btn-primary" style="padding:6px 12px; font-size:12px;">
+                <i class="fas fa-eye"></i> View
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div style="text-align:center; padding:48px; color:#9ca3af;">
+        <i class="fas fa-inbox" style="font-size:48px; margin-bottom:16px;"></i>
+        <p>No assessments uploaded yet.</p>
+        <a href="{{ url_for('assessments.upload_assessment') }}" class="btn btn-primary" style="margin-top:16px;">
+          <i class="fas fa-plus"></i> Upload Your First Assessment
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

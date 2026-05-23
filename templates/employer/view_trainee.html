@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}View Trainee Portfolio{% endblock %}
+{% block page_title %}Trainee Portfolio{% endblock %}
+
+{% block extra_style %}
+.page-wrap { padding: 32px; max-width: 1200px; margin: 0 auto; }
+.card { background:#fff; border-radius:16px; box-shadow:0 4px 24px rgba(0,0,0,.08); overflow:hidden; margin-bottom:24px; border:1px solid #f0f0f0; }
+.card-header { padding:20px 24px; font-size:16px; font-weight:700; color:#fff; background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); display:flex; align-items:center; gap:12px; letter-spacing:0.5px; }
+.card-body { padding:32px; }
+.info-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:20px; }
+.info-item { display:flex; flex-direction:column; gap:8px; }
+.info-label { font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; }
+.info-value { font-size:15px; color:#1f2937; font-weight:600; }
+.assessment-card { border:2px solid #e5e7eb; border-radius:12px; padding:20px; margin-bottom:16px; }
+.evidence-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; margin-top:16px; }
+.evidence-item { border:2px solid #e5e7eb; border-radius:8px; overflow:hidden; }
+.evidence-preview { height:120px; background:#f9fafb; display:flex; align-items:center; justify-content:center; }
+.evidence-preview i { font-size:32px; color:#9ca3af; }
+.evidence-info { padding:12px; }
+.evidence-name { font-size:12px; font-weight:600; color:#1f2937; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.btn { padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; transition:all 0.2s; text-decoration:none; display:inline-flex; align-items:center; gap:8px; }
+.btn-primary { background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:#fff; }
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(102,126,234,.3); }
+.recommendation-box { background:#eff6ff; border:2px solid #bfdbfe; border-radius:12px; padding:20px; margin-top:24px; }
+.rating-stars { color:#fbbf24; font-size:20px; }
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+  <div class="card">
+    <div class="card-header">
+      <i class="fas fa-user-graduate"></i> Trainee Portfolio
+    </div>
+    <div class="card-body">
+      
+      <div style="margin-bottom:24px;">
+        <a href="{{ url_for('employer.dashboard') }}" class="btn btn-primary">
+          <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+      </div>
+      
+      <h2 style="margin:0 0 24px; font-size:24px; color:#1f2937;">{{ trainee.full_name }}</h2>
+      
+      <div class="info-grid" style="margin-bottom:32px;">
+        <div class="info-item">
+          <span class="info-label">Admission Number</span>
+          <span class="info-value">{{ trainee.admission_number }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Class</span>
+          <span class="info-value">{{ trainee.classes.name if trainee.classes else '—' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Department</span>
+          <span class="info-value">{{ trainee.classes.departments.name if trainee.classes and trainee.classes.departments else '—' }}</span>
+        </div>
+      </div>
+      
+      <h3 style="margin:0 0 20px; font-size:18px; color:#1f2937;">Approved Assessments</h3>
+      
+      {% if assessments %}
+      {% for a in assessments %}
+      <div class="assessment-card">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+          <div>
+            <h4 style="margin:0 0 4px; font-size:16px; color:#1f2937;">
+              {{ a.units.code }} - {{ a.units.name }}
+            </h4>
+            <p style="margin:0; color:#6b7280; font-size:13px;">
+              {{ a.assessment_type|replace('_', ' ')|title }} • {{ a.year }} / Term {{ a.term }}
+            </p>
+          </div>
+          <span style="background:#ecfdf5; color:#065f46; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">
+            Approved
+          </span>
+        </div>
+        
+        {% if evidence.get(a.id) %}
+        <div class="evidence-grid">
+          {% for e in evidence[a.id] %}
+          <div class="evidence-item">
+            <div class="evidence-preview">
+              {% if e.file_type == 'image' %}
+              <i class="fas fa-image"></i>
+              {% elif e.file_type == 'pdf' %}
+              <i class="fas fa-file-pdf"></i>
+              {% elif e.file_type == 'video' %}
+              <i class="fas fa-video"></i>
+              {% else %}
+              <i class="fas fa-file"></i>
+              {% endif %}
+            </div>
+            <div class="evidence-info">
+              <div class="evidence-name">{{ e.file_name }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+      {% else %}
+      <div style="text-align:center; padding:32px; color:#9ca3af; border:2px dashed #e5e7eb; border-radius:12px;">
+        <i class="fas fa-inbox" style="font-size:32px; margin-bottom:12px;"></i>
+        <p>No approved assessments found.</p>
+      </div>
+      {% endif %}
+      
+      <div class="recommendation-box">
+        <h3 style="margin:0 0 16px; font-size:18px; color:#1e40af;">Submit Recommendation</h3>
+        
+        {% if existing_recommendation %}
+        <div style="margin-bottom:20px;">
+          <p style="margin:0 0 8px; color:#6b7280; font-size:13px;">Your existing recommendation:</p>
+          <div style="background:#fff; padding:16px; border-radius:8px; border:1px solid #bfdbfe;">
+            <div class="rating-stars">
+              {% for i in range(existing_recommendation.rating) %}★{% endfor %}
+              {% for i in range(5 - existing_recommendation.rating) %}☆{% endfor %}
+            </div>
+            <p style="margin:8px 0 0; color:#1f2937;">{{ existing_recommendation.content }}</p>
+          </div>
+        </div>
+        {% endif %}
+        
+        <form method="post" action="{{ url_for('employer.submit_recommendation', trainee_id=trainee.id) }}">
+          <div style="margin-bottom:16px;">
+            <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:8px;">Rating (1-5)</label>
+            <select name="rating" style="width:100%; padding:12px; border:2px solid #e5e7eb; border-radius:8px; font-size:14px;">
+              <option value="">-- Select Rating --</option>
+              <option value="1">1 - Poor</option>
+              <option value="2">2 - Fair</option>
+              <option value="3">3 - Good</option>
+              <option value="4">4 - Very Good</option>
+              <option value="5">5 - Excellent</option>
+            </select>
+          </div>
+          <div style="margin-bottom:16px;">
+            <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:8px;">Recommendation Content</label>
+            <textarea name="content" rows="4" style="width:100%; padding:12px; border:2px solid #e5e7eb; border-radius:8px; font-size:14px; resize:vertical;" placeholder="Provide your recommendation for this trainee..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-paper-plane"></i> Submit Recommendation
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

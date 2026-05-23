@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Pending Approvals{% endblock %}
+{% block page_title %}Pending Approvals{% endblock %}
+
+{% block extra_style %}
+.page-wrap { padding: 32px; max-width: 1200px; margin: 0 auto; }
+.card { background:#fff; border-radius:16px; box-shadow:0 4px 24px rgba(0,0,0,.08); overflow:hidden; margin-bottom:24px; border:1px solid #f0f0f0; }
+.card-header { padding:20px 24px; font-size:16px; font-weight:700; color:#fff; background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); display:flex; align-items:center; gap:12px; letter-spacing:0.5px; }
+.card-body { padding:32px; }
+.assessment-card { border:2px solid #e5e7eb; border-radius:12px; padding:20px; margin-bottom:16px; transition:all 0.2s; }
+.assessment-card:hover { border-color:#667eea; box-shadow:0 4px 12px rgba(102,126,234,.1); }
+.btn { padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; transition:all 0.2s; font-family:inherit; text-decoration:none; display:inline-flex; align-items:center; gap:8px; }
+.btn-primary { background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:#fff; }
+.btn-success { background:#10b981; color:#fff; }
+.btn-danger { background:#dc2626; color:#fff; }
+.btn-primary:hover, .btn-success:hover, .btn-danger:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,.2); }
+.info-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin:16px 0; }
+.info-item { display:flex; flex-direction:column; gap:4px; }
+.info-label { font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; }
+.info-value { font-size:14px; color:#1f2937; font-weight:600; }
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+  <div class="card">
+    <div class="card-header">
+      <i class="fas fa-clipboard-check"></i> Pending Approvals
+    </div>
+    <div class="card-body">
+      
+      {% if assessments %}
+      {% for a in assessments %}
+      <div class="assessment-card" id="assessment-{{ a.id }}">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
+          <div>
+            <h3 style="margin:0 0 8px; font-size:18px; color:#1f2937;">
+              {{ a.units.code }} - {{ a.units.name }}
+            </h3>
+            <p style="margin:0; color:#6b7280; font-size:14px;">
+              {{ a.students.full_name }} ({{ a.students.admission_number }})
+            </p>
+          </div>
+          <span style="background:#fef3c7; color:#92400e; padding:6px 12px; border-radius:20px; font-size:12px; font-weight:600;">
+            Pending
+          </span>
+        </div>
+        
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Class</span>
+            <span class="info-value">{{ a.classes.name }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Assessment Type</span>
+            <span class="info-value">{{ a.assessment_type|replace('_', ' ')|title }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Year/Term</span>
+            <span class="info-value">{{ a.year }} / Term {{ a.term }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Submitted</span>
+            <span class="info-value">{{ a.submitted_at|strftime('%Y-%m-%d %H:%M') if a.submitted_at else '-' }}</span>
+          </div>
+        </div>
+        
+        <div style="margin-top:20px; display:flex; gap:12px; align-items:center;">
+          <a href="{{ url_for('assessments.view_assessment', assessment_id=a.id) }}" class="btn btn-primary">
+            <i class="fas fa-eye"></i> View Evidence
+          </a>
+          <button onclick="approveAssessment({{ a.id }})" class="btn btn-success">
+            <i class="fas fa-check"></i> Approve
+          </button>
+          <button onclick="rejectAssessment({{ a.id }})" class="btn btn-danger">
+            <i class="fas fa-times"></i> Reject
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div style="text-align:center; padding:48px; color:#9ca3af;">
+        <i class="fas fa-check-circle" style="font-size:48px; margin-bottom:16px;"></i>
+        <p>No pending assessments to review.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+function approveAssessment(assessmentId) {
+  const feedback = prompt("Add feedback (optional):");
+  if (feedback !== null) {
+    fetch(`/assessments/approve/${assessmentId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `action=approve&feedback=${encodeURIComponent(feedback || '')}`
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        document.getElementById(`assessment-${assessmentId}`).remove();
+        if (!document.querySelector('.assessment-card')) {
+          location.reload();
+        }
+      } else {
+        alert('Error: ' + data.error);
+      }
+    });
+  }
+}
+
+function rejectAssessment(assessmentId) {
+  const feedback = prompt("Add feedback (required for rejection):");
+  if (feedback !== null && feedback.trim()) {
+    fetch(`/assessments/approve/${assessmentId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `action=reject&feedback=${encodeURIComponent(feedback)}`
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        document.getElementById(`assessment-${assessmentId}`).remove();
+        if (!document.querySelector('.assessment-card')) {
+          location.reload();
+        }
+      } else {
+        alert('Error: ' + data.error);
+      }
+    });
+  }
+}
+</script>
+{% endblock %}
