@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS assessments (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+DROP TRIGGER IF EXISTS trg_assessments_updated_at ON assessments;
 CREATE TRIGGER trg_assessments_updated_at
     BEFORE UPDATE ON assessments
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -155,6 +156,7 @@ CREATE TABLE IF NOT EXISTS employer_recommendations (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+DROP TRIGGER IF EXISTS trg_employer_recommendations_updated_at ON employer_recommendations;
 CREATE TRIGGER trg_employer_recommendations_updated_at
     BEFORE UPDATE ON employer_recommendations
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -203,6 +205,7 @@ CREATE TABLE IF NOT EXISTS employers (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+DROP TRIGGER IF EXISTS trg_employers_updated_at ON employers;
 CREATE TRIGGER trg_employers_updated_at
     BEFORE UPDATE ON employers
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -230,6 +233,7 @@ CREATE TABLE IF NOT EXISTS employer_users (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+DROP TRIGGER IF EXISTS trg_employer_users_updated_at ON employer_users;
 CREATE TRIGGER trg_employer_users_updated_at
     BEFORE UPDATE ON employer_users
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -268,6 +272,7 @@ CREATE TABLE IF NOT EXISTS clearance_requests (
     updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+DROP TRIGGER IF EXISTS trg_clearance_requests_updated_at ON clearance_requests;
 CREATE TRIGGER trg_clearance_requests_updated_at
     BEFORE UPDATE ON clearance_requests
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
