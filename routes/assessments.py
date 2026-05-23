@@ -220,28 +220,29 @@ def approve_assessment(assessment_id):
             "reviewed_at": reviewed_at,
         }).eq("id", assessment_id).execute()
         
-        # If approved, rename evidence files with trainer name and date
-        if action == "approve":
-            evidence = db.table("evidence").select("*").eq("assessment_id", assessment_id).execute().data or []
-            approval_date = datetime.now().strftime("%Y%m%d")
+        # If approved or rejected, rename evidence files with trainer name and date
+        evidence = db.table("evidence").select("*").eq("assessment_id", assessment_id).execute().data or []
+        approval_date = datetime.now().strftime("%Y%m%d")
+        
+        for e in evidence:
+            # Extract original filename and extension
+            original_name = e["file_name"]
+            name_parts = original_name.rsplit('.', 1)
+            base_name = name_parts[0] if len(name_parts) > 1 else original_name
+            extension = f".{name_parts[1]}" if len(name_parts) > 1 else ""
             
-            for e in evidence:
-                # Extract original filename and extension
-                original_name = e["file_name"]
-                name_parts = original_name.rsplit('.', 1)
-                base_name = name_parts[0] if len(name_parts) > 1 else original_name
-                extension = f".{name_parts[1]}" if len(name_parts) > 1 else ""
-                
-                # Create new filename with trainer name and approval date
-                # Format: original_filename_trainername_YYYYMMDD.ext
-                trainer_name_clean = trainer_name.replace(" ", "_").lower()
-                new_filename = f"{base_name}_{trainer_name_clean}_{approval_date}{extension}"
-                
-                # Update the file_name in the database
-                # Note: In production, you would also rename the actual file in Supabase Storage
-                db.table("evidence").update({
-                    "file_name": new_filename
-                }).eq("id", e["id"]).execute()
+            # Create new filename with action, trainer name and date
+            # Format: original_filename_APPROVED_BY_trainername_YYYYMMDD.ext
+            # or: original_filename_REJECTED_BY_trainername_YYYYMMDD.ext
+            trainer_name_clean = trainer_name.replace(" ", "_").lower()
+            action_text = "APPROVED" if action == "approve" else "REJECTED"
+            new_filename = f"{base_name}_{action_text}_BY_{trainer_name_clean}_{approval_date}{extension}"
+            
+            # Update the file_name in the database
+            # Note: In production, you would also rename the actual file in Supabase Storage
+            db.table("evidence").update({
+                "file_name": new_filename
+            }).eq("id", e["id"]).execute()
         
         write_audit_log(f"assessment_{action}", target=str(assessment_id))
         
