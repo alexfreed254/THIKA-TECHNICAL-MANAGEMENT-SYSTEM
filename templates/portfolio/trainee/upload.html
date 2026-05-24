@@ -2,6 +2,11 @@
 {% block title %}Upload Assessment{% endblock %}
 {% block page_title %}Upload Assessment{% endblock %}
 {% block page_subtitle %}Submit your scanned marked assessment script{% endblock %}
+{% block back_button %}
+<a href="{{ url_for('portfolio.portfolio_trainee_dashboard') }}" class="btn-ghost btn-sm">
+  <i class="fas fa-arrow-left"></i>
+</a>
+{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -55,6 +60,10 @@
       <!-- Assessment details -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div>
+          <label class="form-label">Assessment Number *</label>
+          <input type="text" name="assessment_number" required class="form-input" placeholder="e.g. A01, P02">
+        </div>
+        <div>
           <label class="form-label">Term</label>
           <select name="term" required class="form-input">
             <option value="">Select</option>
@@ -80,21 +89,24 @@
             {% endfor %}
           </select>
         </div>
+      </div>
+
+      <!-- Assessment Type & Title -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="form-label">Assessment Type</label>
+          <label class="form-label">Assessment Type *</label>
           <select name="assessment_type" required class="form-input">
             <option value="">Select</option>
             <option value="PRACTICAL">Practical</option>
             <option value="THEORY">Theory</option>
             <option value="ORAL">Oral</option>
+            <option value="PROJECT">Project</option>
           </select>
         </div>
-      </div>
-
-      <!-- Title -->
-      <div>
-        <label class="form-label">Assessment Title</label>
-        <input type="text" name="title" required class="form-input" placeholder="e.g. Electrical Installation Practical">
+        <div>
+          <label class="form-label">Assessment Title *</label>
+          <input type="text" name="title" required class="form-input" placeholder="e.g. Electrical Installation Practical">
+        </div>
       </div>
 
       <!-- Script file -->

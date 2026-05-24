@@ -2,6 +2,11 @@
 {% block title %}Assessment Review{% endblock %}
 {% block page_title %}Assessment Review{% endblock %}
 {% block page_subtitle %}{{ assessment.title or assessment.script_file_name or 'Assessment' }}{% endblock %}
+{% block back_button %}
+<a href="{{ url_for('portfolio.portfolio_trainer_dashboard') }}" class="btn-ghost btn-sm">
+  <i class="fas fa-arrow-left"></i>
+</a>
+{% endblock %}
 
 {% block content %}
 <div class="grid lg:grid-cols-3 gap-6">

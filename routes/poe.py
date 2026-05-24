@@ -1,6 +1,7 @@
 """
-routes/poe.py — Portfolio of Evidence (POE) for Trainers
+routes/poe.py — Portfolio of Evidence (POE) for Trainers and Trainees
 Trainers upload professional teaching and validation documents.
+Trainees upload assessment evidence and portfolio components.
 """
 
 from flask import (Blueprint, render_template, request,
@@ -8,10 +9,14 @@ from flask import (Blueprint, render_template, request,
 from auth_utils import login_required, current_user, write_audit_log
 from db import get_service_client
 from notify import send_notification
+from werkzeug.utils import secure_filename
+import os
+import uuid
+from datetime import datetime
 
 poe_bp = Blueprint("poe", __name__)
 
-POE_CATEGORIES = [
+TRAINER_POE_CATEGORIES = [
     "Lesson Plans",
     "Scheme of Work",
     "Assessment Tools",
@@ -25,6 +30,18 @@ POE_CATEGORIES = [
     "Other",
 ]
 
+TRAINEE_POE_CATEGORIES = [
+    "Assessment Scripts",
+    "Practical Evidence",
+    "Project Work",
+    "Industrial Attachment",
+    "Case Studies",
+    "Presentations",
+    "Certificates",
+    "Achievements",
+    "Other",
+]
+
 
 def _db():
     return get_service_client()
@@ -33,6 +50,48 @@ def _db():
 def _trainer_row(user_id):
     rows = _db().table("trainers").select("*, departments(name)").eq("user_id", user_id).limit(1).execute().data or []
     return rows[0] if rows else None
+
+
+def _student_row(user_id):
+    rows = _db().table("students").select("*").eq("user_id", user_id).limit(1).execute().data or []
+    return rows[0] if rows else None
+
+
+def allowed_file(filename: str) -> bool:
+    """Check if file extension is allowed."""
+    allowed_exts = {'.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.mov', '.avi', '.mkv', '.doc', '.docx', '.ppt', '.pptx'}
+    return any(filename.lower().endswith(ext) for ext in allowed_exts)
+
+
+def generate_storage_path(user_id: str, category: str, filename: str) -> str:
+    """
+    Generate a structured path for Supabase Storage.
+    Format: {category}/{user_id}/{timestamp}_{uuid}_{secure_filename}
+    """
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    unique_id = str(uuid.uuid4())[:8]
+    secure_name = secure_filename(filename)
+    return f"{category}/{user_id}/{timestamp}_{unique_id}_{secure_name}"
+
+
+def upload_to_supabase(supabase, bucket: str, file, path: str) -> str:
+    """
+    Upload file to Supabase Storage bucket.
+    Returns the public URL or raises exception on failure.
+    """
+    try:
+        file.seek(0)
+        supabase.storage.from_(bucket).upload(
+            path=path,
+            file=file.read(),
+            file_options={"content-type": file.content_type, "upsert": "false"}
+        )
+        # Get public URL (bucket must be public)
+        public_url = supabase.storage.from_(bucket).get_public_url(path)
+        return public_url
+    except Exception as e:
+        current_app.logger.error(f"Upload failed to {bucket}/{path}: {str(e)}")
+        raise
 
 
 # ── Trainer: My POE ───────────────────────────────────────────────────────────
@@ -67,7 +126,7 @@ def my_poe():
     return render_template("poe/my_poe.html",
                            trainer=trainer, docs=docs,
                            grouped=dict(grouped),
-                           categories=POE_CATEGORIES, user=user)
+                           categories=TRAINER_POE_CATEGORIES, user=user)
 
 
 # ── Trainer: Upload Document ──────────────────────────────────────────────────
@@ -116,7 +175,7 @@ def upload_doc():
             return redirect(url_for("poe.my_poe"))
 
     return render_template("poe/upload_doc.html",
-                           trainer=trainer, categories=POE_CATEGORIES,
+                           trainer=trainer, categories=TRAINER_POE_CATEGORIES,
                            error=error, user=user)
 
 
@@ -171,7 +230,7 @@ def review_poe(trainer_id):
     return render_template("poe/review_poe.html",
                            trainer=trainer, docs=docs,
                            grouped=dict(grouped),
-                           categories=POE_CATEGORIES, user=user)
+                           categories=TRAINER_POE_CATEGORIES, user=user)
 
 
 # ── HOD/Admin: Verify Document ────────────────────────────────────────────────
@@ -228,3 +287,194 @@ def admin_overview():
 
     return render_template("poe/admin_overview.html",
                            trainers=trainers, user=user)
+
+
+# ── Trainee: My POE ───────────────────────────────────────────────────────────
+
+@poe_bp.route("/trainee/my-poe")
+@login_required
+def trainee_my_poe():
+    user = current_user()
+    if user.get("role") != "student":
+        abort(403)
+    db = _db()
+    student = _student_row(user["id"])
+    if not student:
+        abort(403)
+
+    trainee_id = student["id"]
+    
+    # Get trainee's POE components
+    docs = (db.table("trainee_poe_components")
+              .select("*")
+              .eq("trainee_id", trainee_id)
+              .order("created_at", desc=True)
+              .execute().data or [])
+
+    # Group by category
+    from collections import defaultdict
+    grouped = defaultdict(list)
+    for d in docs:
+        grouped[d["component_category"]].append(d)
+
+    return render_template("poe/trainee_my_poe.html",
+                           student=student, docs=docs,
+                           grouped=dict(grouped),
+                           categories=TRAINEE_POE_CATEGORIES, user=user)
+
+
+# ── Trainee: Upload POE Component ──────────────────────────────────────────────
+
+@poe_bp.route("/trainee/upload", methods=["GET", "POST"])
+@login_required
+def trainee_upload_poe():
+    user = current_user()
+    if user.get("role") != "student":
+        abort(403)
+    db = _db()
+    student = _student_row(user["id"])
+    if not student:
+        abort(403)
+
+    error = None
+    if request.method == "POST":
+        category = request.form.get("component_category", "").strip()
+        title = request.form.get("component_title", "").strip()
+        description = request.form.get("description", "").strip()
+        
+        file = request.files.get("file")
+        
+        if not category or not title:
+            error = "Category and title are required."
+        elif not file or not file.filename or not allowed_file(file.filename):
+            error = "Please upload a valid file."
+        else:
+            try:
+                from flask import current_app
+                trainee_id = student["id"]
+                
+                # Generate storage path and upload to Supabase
+                file_path = generate_storage_path(str(trainee_id), category, file.filename)
+                bucket_poe = current_app.config.get("BUCKET_POE", "poe-components")
+                
+                file_url = upload_to_supabase(db, bucket_poe, file, file_path)
+                
+                # Determine file type
+                ext = file.filename.split(".")[-1].lower() if "." in file.filename else ""
+                ftype = "photo" if ext in ("jpg","jpeg","png","gif","webp") \
+                       else "video" if ext in ("mp4","mov","avi","mkv") \
+                       else "pdf" if ext == "pdf" else "document"
+
+                db.table("trainee_poe_components").insert({
+                    "trainee_id": trainee_id,
+                    "component_category": category,
+                    "component_title": title,
+                    "description": description,
+                    "file_path": file_path,
+                    "file_name": secure_filename(file.filename),
+                    "file_type": ftype,
+                    "file_url": file_url,
+                }).execute()
+
+                write_audit_log("trainee_poe_upload", target=title)
+                flash("POE component uploaded successfully.", "success")
+                return redirect(url_for("poe.trainee_my_poe"))
+            except Exception as e:
+                error = f"Upload failed: {str(e)}"
+
+    return render_template("poe/trainee_upload_poe.html",
+                           student=student, categories=TRAINEE_POE_CATEGORIES,
+                           error=error, user=user)
+
+
+# ── Trainee: Delete POE Component ──────────────────────────────────────────────
+
+@poe_bp.route("/trainee/delete/<int:component_id>", methods=["POST"])
+@login_required
+def trainee_delete_poe(component_id):
+    user = current_user()
+    db = _db()
+    student = _student_row(user["id"])
+
+    component = (db.table("trainee_poe_components").select("trainee_id,file_path").eq("id", component_id).limit(1).execute().data or [None])[0]
+    if not component:
+        abort(404)
+
+    # Only own trainee can delete
+    if not student or component["trainee_id"] != student["id"]:
+        abort(403)
+
+    # Delete from Supabase Storage if file exists
+    if component.get("file_path"):
+        try:
+            from flask import current_app
+            bucket_poe = current_app.config.get("BUCKET_POE", "poe-components")
+            db.storage.from_(bucket_poe).remove([component["file_path"]])
+        except Exception:
+            pass  # Continue even if storage deletion fails
+
+    db.table("trainee_poe_components").delete().eq("id", component_id).execute()
+    write_audit_log("trainee_poe_delete", target=str(component_id))
+    flash("POE component deleted.", "success")
+    return redirect(url_for("poe.trainee_my_poe"))
+
+
+# ── Trainer/Admin: Review Trainee POE ───────────────────────────────────────────
+
+@poe_bp.route("/trainee/review/<int:trainee_id>")
+@login_required
+def review_trainee_poe(trainee_id):
+    user = current_user()
+    if user.get("role") not in ("trainer", "dept_admin", "super_admin", "hod"):
+        abort(403)
+    db = _db()
+
+    student = (db.table("students").select("*, departments(name)").eq("id", trainee_id).limit(1).execute().data or [None])[0]
+    if not student:
+        abort(404)
+
+    docs = (db.table("trainee_poe_components")
+              .select("*")
+              .eq("trainee_id", trainee_id)
+              .order("component_category").order("created_at", desc=True)
+              .execute().data or [])
+
+    from collections import defaultdict
+    grouped = defaultdict(list)
+    for d in docs:
+        grouped[d["component_category"]].append(d)
+
+    return render_template("poe/review_trainee_poe.html",
+                           student=student, docs=docs,
+                           grouped=dict(grouped),
+                           categories=TRAINEE_POE_CATEGORIES, user=user)
+
+
+# ── Trainer/Admin: Verify Trainee POE Component ──────────────────────────────────
+
+@poe_bp.route("/trainee/verify/<int:component_id>", methods=["POST"])
+@login_required
+def verify_trainee_poe_component(component_id):
+    user = current_user()
+    if user.get("role") not in ("trainer", "dept_admin", "super_admin", "hod"):
+        abort(403)
+    db = _db()
+
+    from utils import now_eat
+    db.table("trainee_poe_components").update({
+        "is_verified": True,
+        "verified_by": user["id"],
+        "verified_at": now_eat().isoformat(),
+    }).eq("id", component_id).execute()
+
+    # Notify trainee
+    component = (db.table("trainee_poe_components").select("trainee_id,component_title").eq("id", component_id).limit(1).execute().data or [{}])[0]
+    student_row = (db.table("students").select("user_id").eq("id", component.get("trainee_id")).limit(1).execute().data or [{}])[0]
+    if student_row.get("user_id"):
+        send_notification(student_row["user_id"], "POE Component Verified",
+                          f"Your POE component '{component.get('component_title')}' has been verified.",
+                          notif_type="success", module="poe", reference_id=component_id)
+
+    write_audit_log("trainee_poe_verify", target=str(component_id))
+    flash("POE component verified.", "success")
+    return redirect(request.referrer or url_for("poe.trainee_my_poe"))

@@ -1,0 +1,108 @@
+{% extends "student/base.html" %}
+{% block title %}Upload POE Component{% endblock %}
+{% block page_title %}Upload POE Component{% endblock %}
+{% block page_subtitle %}Add evidence to your portfolio{% endblock %}
+{% block back_button %}
+<a href="{{ url_for('poe.trainee_my_poe') }}" class="btn-ghost btn-sm">
+  <i class="fas fa-arrow-left"></i>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+    <div class="flex items-center gap-3 mb-8">
+      <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
+        <i class="fas fa-cloud-upload-alt text-indigo-600 text-xl"></i>
+      </div>
+      <div>
+        <h2 class="text-lg font-bold text-slate-800">Upload POE Component</h2>
+        <p class="text-xs text-slate-400">PDF, images, videos, or documents &bull; Max 100MB</p>
+      </div>
+    </div>
+
+    {% if error %}
+    <div class="flash-error mb-5"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('poe.trainee_upload_poe') }}" enctype="multipart/form-data" class="space-y-6">
+      <!-- Category -->
+      <div>
+        <label class="form-label">Category *</label>
+        <select name="component_category" required class="form-input">
+          <option value="">Select category</option>
+          {% for cat in categories %}
+          <option value="{{ cat }}">{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Title -->
+      <div>
+        <label class="form-label">Title *</label>
+        <input type="text" name="component_title" required class="form-input" 
+               placeholder="e.g. Electrical Installation Practical Evidence">
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label class="form-label">Description</label>
+        <textarea name="description" rows="3" class="form-input resize-none" 
+                  placeholder="Brief description of this component..."></textarea>
+      </div>
+
+      <!-- File Upload -->
+      <div>
+        <label class="form-label">File *</label>
+        <div class="upload-zone p-8 text-center border-2 border-dashed border-slate-200 rounded-xl hover:border-indigo-500 transition cursor-pointer"
+             onclick="document.getElementById('file').click()">
+          <input type="file" name="file" id="file" required 
+                 accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.mkv,.doc,.docx,.ppt,.pptx" 
+                 class="hidden" onchange="handleFileSelect(this)">
+          <i id="file-icon" class="fas fa-cloud-upload-alt text-5xl text-slate-300 mb-3"></i>
+          <p id="file-label" class="text-sm font-semibold text-slate-500">Click or drag & drop your file here</p>
+          <p class="text-xs text-slate-400 mt-1">PDF, Images, Videos, Documents &bull; Max 100MB</p>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primary w-full justify-center py-4 text-base font-extrabold rounded-2xl">
+        <i class="fas fa-paper-plane"></i> UPLOAD COMPONENT
+      </button>
+    </form>
+  </div>
+
+  <div class="mt-5 p-5 bg-blue-50 border-2 border-blue-100 rounded-2xl">
+    <div class="flex items-start gap-4">
+      <div class="bg-blue-600 text-white p-2 rounded-lg flex-shrink-0"><i class="fas fa-info-circle"></i></div>
+      <p class="text-xs text-blue-800 leading-relaxed">
+        Upload evidence of your practical work, projects, assessments, certificates, and other achievements. 
+        These components will be verified by your trainers and contribute to your overall portfolio.
+      </p>
+    </div>
+  </div>
+</div>
+
+<div id="loading-overlay" class="hidden fixed inset-0 bg-indigo-950/60 backdrop-blur-md flex items-center justify-center z-50">
+  <div class="bg-white p-10 rounded-3xl shadow-2xl flex flex-col items-center">
+    <div class="animate-spin rounded-full h-16 w-16 border-4 border-indigo-100 border-t-indigo-600 mb-4"></div>
+    <p class="font-bold text-indigo-900">Uploading...</p>
+    <p class="text-xs text-slate-500 mt-2">Please do not close this window</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function handleFileSelect(input) {
+  if (input.files[0]) {
+    const file = input.files[0];
+    document.getElementById('file-icon').className = 'fas fa-file-check text-5xl text-indigo-500 mb-3';
+    document.getElementById('file-label').innerHTML = '<span class="text-indigo-700 font-bold">✓ ' + file.name + '</span>';
+  }
+}
+document.querySelector('form').addEventListener('submit', function() {
+  document.getElementById('loading-overlay').classList.remove('hidden');
+  document.querySelector('button[type="submit"]').disabled = true;
+});
+</script>
+{% endblock %}

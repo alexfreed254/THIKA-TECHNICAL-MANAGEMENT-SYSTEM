@@ -1,0 +1,113 @@
+{% extends "student/base.html" %}
+{% block title %}My Portfolio of Evidence{% endblock %}
+{% block page_title %}Portfolio of Evidence (POE){% endblock %}
+{% block page_subtitle %}Your assessment evidence and portfolio components{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h2 class="text-xl font-bold text-gray-800">My Portfolio of Evidence</h2>
+    {% if student %}
+    <p class="text-sm text-gray-500 mt-1">
+      {{ student.full_name }} — Admission: {{ student.admission_number }}
+    </p>
+    {% endif %}
+  </div>
+  <a href="{{ url_for('poe.trainee_upload_poe') }}" class="btn-primary">
+    <i class="fas fa-upload mr-2"></i>Upload Component
+  </a>
+</div>
+
+<!-- Stats -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+  <div class="card text-center border-t-4 border-blue-500">
+    <p class="text-3xl font-bold text-blue-700">{{ docs|length }}</p>
+    <p class="text-sm text-gray-500 mt-1">Total Components</p>
+  </div>
+  <div class="card text-center border-t-4 border-green-500">
+    <p class="text-3xl font-bold text-green-700">{{ docs | selectattr('is_verified') | list | length }}</p>
+    <p class="text-sm text-gray-500 mt-1">Verified</p>
+  </div>
+  <div class="card text-center border-t-4 border-yellow-500">
+    <p class="text-3xl font-bold text-yellow-700">{{ docs | rejectattr('is_verified') | list | length }}</p>
+    <p class="text-sm text-gray-500 mt-1">Pending Verification</p>
+  </div>
+  <div class="card text-center border-t-4 border-purple-500">
+    <p class="text-3xl font-bold text-purple-700">{{ grouped|length }}</p>
+    <p class="text-sm text-gray-500 mt-1">Categories</p>
+  </div>
+</div>
+
+<!-- Components by Category -->
+{% for category in categories %}
+{% set components = grouped.get(category, []) %}
+{% if components %}
+<div class="card mb-6">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+      <i class="fas fa-folder text-indigo-500"></i> {{ category }}
+    </h3>
+    <span class="bg-indigo-100 text-indigo-700 text-sm font-bold px-3 py-1 rounded-full">{{ components|length }}</span>
+  </div>
+  
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for comp in components %}
+    <div class="border rounded-lg p-4 hover:shadow-md transition">
+      <div class="flex items-start justify-between mb-2">
+        <div class="flex items-center gap-2">
+          {% if comp.file_type == 'photo' %}
+          <i class="fas fa-image text-blue-500"></i>
+          {% elif comp.file_type == 'video' %}
+          <i class="fas fa-video text-red-500"></i>
+          {% elif comp.file_type == 'pdf' %}
+          <i class="fas fa-file-pdf text-red-600"></i>
+          {% else %}
+          <i class="fas fa-file text-gray-500"></i>
+          {% endif %}
+          <span class="font-semibold text-sm text-gray-800 truncate">{{ comp.component_title }}</span>
+        </div>
+        {% if comp.is_verified %}
+        <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">
+          <i class="fas fa-check-circle"></i> Verified
+        </span>
+        {% else %}
+        <span class="bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded-full">Pending</span>
+        {% endif %}
+      </div>
+      
+      {% if comp.description %}
+      <p class="text-xs text-gray-600 mb-2 line-clamp-2">{{ comp.description }}</p>
+      {% endif %}
+      
+      <p class="text-xs text-gray-400 mb-3">{{ comp.created_at[:10] if comp.created_at else '' }}</p>
+      
+      <div class="flex items-center justify-between">
+        {% if comp.file_url %}
+        <a href="{{ comp.file_url }}" target="_blank" class="text-sm text-blue-600 hover:underline">
+          <i class="fas fa-external-link-alt"></i> View
+        </a>
+        {% endif %}
+        <form method="POST" action="{{ url_for('poe.trainee_delete_poe', component_id=comp.id) }}" 
+              onsubmit="return confirm('Are you sure you want to delete this component?');">
+          <button type="submit" class="text-sm text-red-600 hover:text-red-800">
+            <i class="fas fa-trash"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endfor %}
+
+{% if not grouped %}
+<div class="card text-center py-12">
+  <i class="fas fa-folder-open text-5xl text-gray-300 mb-4"></i>
+  <p class="text-gray-500">No POE components uploaded yet.</p>
+  <a href="{{ url_for('poe.trainee_upload_poe') }}" class="btn-primary mt-4">
+    <i class="fas fa-upload mr-2"></i>Upload Your First Component
+  </a>
+</div>
+{% endif %}
+{% endblock %}

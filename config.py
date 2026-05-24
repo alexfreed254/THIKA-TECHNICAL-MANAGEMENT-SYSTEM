@@ -16,6 +16,11 @@ class Config:
     ALLOWED_DOC_EXTENSIONS = {'pdf'}
     INSTITUTION_NAME = os.environ.get('INSTITUTION_NAME', 'Thika Technical Training Institute')
     INSTITUTION_LOGO = os.environ.get('INSTITUTION_LOGO', 'images/logo.jpg')
+    
+    # E-Portfolio Storage Buckets
+    BUCKET_SCRIPTS = os.environ.get('BUCKET_SCRIPTS', 'assessment-scripts')
+    BUCKET_EVIDENCE = os.environ.get('BUCKET_EVIDENCE', 'assessment-evidence')
+    BUCKET_POE = os.environ.get('BUCKET_POE', 'poe-components')
 
 class DevelopmentConfig(Config):
     DEBUG = True

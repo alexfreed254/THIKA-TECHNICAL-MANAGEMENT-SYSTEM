@@ -1,0 +1,122 @@
+{% extends "base_tailwind.html" %}
+{% block title %}Review Trainee POE{% endblock %}
+{% block page_title %}Trainee Portfolio of Evidence{% endblock %}
+{% block back_button %}
+<a href="#" onclick="history.back()" class="btn-ghost btn-sm">
+  <i class="fas fa-arrow-left"></i>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h2 class="text-xl font-bold text-gray-800">Trainee Portfolio of Evidence</h2>
+    {% if student %}
+    <p class="text-sm text-gray-500 mt-1">
+      {{ student.full_name }} — Admission: {{ student.admission_number }}
+    </p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+  <div class="card text-center border-t-4 border-blue-500">
+    <p class="text-3xl font-bold text-blue-700">{{ docs|length }}</p>
+    <p class="text-sm text-gray-500 mt-1">Total Components</p>
+  </div>
+  <div class="card text-center border-t-4 border-green-500">
+    <p class="text-3xl font-bold text-green-700">{{ docs | selectattr('is_verified') | list | length }}</p>
+    <p class="text-sm text-gray-500 mt-1">Verified</p>
+  </div>
+  <div class="card text-center border-t-4 border-yellow-500">
+    <p class="text-3xl font-bold text-yellow-700">{{ docs | rejectattr('is_verified') | list | length }}</p>
+    <p class="text-sm text-gray-500 mt-1">Pending Verification</p>
+  </div>
+  <div class="card text-center border-t-4 border-purple-500">
+    <p class="text-3xl font-bold text-purple-700">{{ grouped|length }}</p>
+    <p class="text-sm text-gray-500 mt-1">Categories</p>
+  </div>
+</div>
+
+<!-- Components by Category -->
+{% for category in categories %}
+{% set components = grouped.get(category, []) %}
+{% if components %}
+<div class="card mb-6">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+      <i class="fas fa-folder text-indigo-500"></i> {{ category }}
+    </h3>
+    <span class="bg-indigo-100 text-indigo-700 text-sm font-bold px-3 py-1 rounded-full">{{ components|length }}</span>
+  </div>
+  
+  <div class="space-y-3">
+    {% for comp in components %}
+    <div class="border rounded-lg p-4 hover:shadow-md transition">
+      <div class="flex items-start justify-between">
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-2">
+            {% if comp.file_type == 'photo' %}
+            <i class="fas fa-image text-blue-500"></i>
+            {% elif comp.file_type == 'video' %}
+            <i class="fas fa-video text-red-500"></i>
+            {% elif comp.file_type == 'pdf' %}
+            <i class="fas fa-file-pdf text-red-600"></i>
+            {% else %}
+            <i class="fas fa-file text-gray-500"></i>
+            {% endif %}
+            <span class="font-semibold text-gray-800">{{ comp.component_title }}</span>
+            {% if comp.is_verified %}
+            <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">
+              <i class="fas fa-check-circle"></i> Verified
+            </span>
+            {% else %}
+            <span class="bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded-full">Pending</span>
+            {% endif %}
+          </div>
+          
+          {% if comp.description %}
+          <p class="text-sm text-gray-600 mb-2">{{ comp.description }}</p>
+          {% endif %}
+          
+          <div class="flex items-center gap-4 text-xs text-gray-400 mb-2">
+            <span><i class="fas fa-calendar"></i> {{ comp.created_at[:10] if comp.created_at else '' }}</span>
+            <span><i class="fas fa-file"></i> {{ comp.file_name }}</span>
+          </div>
+          
+          {% if comp.file_url %}
+          <a href="{{ comp.file_url }}" target="_blank" class="text-sm text-blue-600 hover:underline">
+            <i class="fas fa-external-link-alt"></i> View File
+          </a>
+          {% endif %}
+        </div>
+        
+        {% if not comp.is_verified %}
+        <form method="POST" action="{{ url_for('poe.verify_trainee_poe_component', component_id=comp.id) }}">
+          <button type="submit" class="btn-primary btn-sm">
+            <i class="fas fa-check-circle"></i> Verify
+          </button>
+        </form>
+        {% endif %}
+      </div>
+      
+      {% if comp.verified_at %}
+      <div class="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-500">
+        <i class="fas fa-check-circle text-green-500"></i> Verified on {{ comp.verified_at[:10] if comp.verified_at else '' }}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endfor %}
+
+{% if not grouped %}
+<div class="card text-center py-12">
+  <i class="fas fa-folder-open text-5xl text-gray-300 mb-4"></i>
+  <p class="text-gray-500">No POE components uploaded by this trainee.</p>
+</div>
+{% endif %}
+{% endblock %}

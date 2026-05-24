@@ -112,6 +112,12 @@
     .sidebar-stat-val { font-size:1.4rem; font-weight:800; line-height:1; }
     .sidebar-stat-lbl { font-size:0.62rem; font-weight:700; text-transform:uppercase; opacity:0.65; margin-top:2px; }
 
+    /* ── Custom scrollbar ── */
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+
     /* ── Mobile sidebar ── */
     #sidebarOverlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:40; }
     #sidebarOverlay.open { display:block; }
@@ -155,8 +161,19 @@
     {% endif %}
 
     <!-- Navigation -->
-    <nav class="flex-1 overflow-y-auto py-2 px-2">
-      {% block sidebar_nav %}{% endblock %}
+    <nav class="flex-1 overflow-hidden flex flex-col">
+      <div class="flex-1 overflow-y-auto py-2 px-2 custom-scrollbar" id="sidebarNav">
+        {% block sidebar_nav %}{% endblock %}
+      </div>
+      <!-- Scroll buttons -->
+      <div class="flex items-center justify-center gap-2 py-2 px-2 border-t border-white/10">
+        <button onclick="scrollSidebar('up')" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
+          <i class="fas fa-chevron-up text-xs"></i>
+        </button>
+        <button onclick="scrollSidebar('down')" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
+          <i class="fas fa-chevron-down text-xs"></i>
+        </button>
+      </div>
     </nav>
 
     <!-- Sidebar footer -->
@@ -184,6 +201,8 @@
         <button id="sidebarToggle" class="lg:hidden text-gray-500 hover:text-gray-700 p-1">
           <i class="fas fa-bars text-lg"></i>
         </button>
+        <!-- Back button (optional) -->
+        {% block back_button %}{% endblock %}
         <div>
           <h1 class="text-base font-semibold text-gray-800 leading-tight">{% block page_title %}Dashboard{% endblock %}</h1>
           <p class="text-xs text-gray-400">{% block page_subtitle %}{% endblock %}</p>
@@ -316,6 +335,19 @@
         document.querySelectorAll('#notifList .bg-blue-50\\/50').forEach(el => el.classList.remove('bg-blue-50/50'));
         document.querySelector('.notif-dot')?.remove();
       });
+  }
+
+  // ── Sidebar scroll buttons ─────────────────────────────────
+  function scrollSidebar(direction) {
+    const nav = document.getElementById('sidebarNav');
+    if (!nav) return;
+    
+    const scrollAmount = 150;
+    if (direction === 'up') {
+      nav.scrollBy({ top: -scrollAmount, behavior: 'smooth' });
+    } else {
+      nav.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+    }
   }
 </script>
 

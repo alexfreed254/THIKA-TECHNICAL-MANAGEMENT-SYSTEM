@@ -3,12 +3,15 @@
 Integrated into the existing Attendance system auth/session model:
 - Uses session-based RBAC from auth_utils.py
 - Uses Supabase via db.get_service_client() (server-side admin)
+- Uses Supabase Storage for file uploads
 
 This file adds functionality under /portfolio/* without changing
 existing Attendance routes.
 """
 
 from datetime import datetime
+import os
+import uuid
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from auth_utils import login_required, student_required, current_user, write_audit_log
 from db import get_service_client
@@ -26,6 +29,44 @@ ALLOWED_EXTENSIONS = {"pdf", "png", "jpg", "jpeg", "mp4", "webm"}
 
 def allowed_file(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def validate_pdf(file) -> bool:
+    """Basic PDF validation - check magic bytes."""
+    if not file or file.filename == '':
+        return False
+    file.seek(0)
+    header = file.read(5)
+    file.seek(0)
+    return header == b'%PDF-'
+
+def generate_storage_path(user_id: str, class_id: str, unit_id: str, filename: str) -> str:
+    """
+    Generate a structured path for Supabase Storage.
+    Format: {class_id}/{unit_id}/{user_id}/{timestamp}_{uuid}_{secure_filename}
+    """
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    unique_id = str(uuid.uuid4())[:8]
+    secure_name = secure_filename(filename)
+    return f"{class_id}/{unit_id}/{user_id}/{timestamp}_{unique_id}_{secure_name}"
+
+def upload_to_supabase(supabase, bucket: str, file, path: str) -> str:
+    """
+    Upload file to Supabase Storage bucket.
+    Returns the public URL or raises exception on failure.
+    """
+    try:
+        file.seek(0)
+        supabase.storage.from_(bucket).upload(
+            path=path,
+            file=file.read(),
+            file_options={"content-type": file.content_type, "upsert": "false"}
+        )
+        # Get public URL (bucket must be public)
+        public_url = supabase.storage.from_(bucket).get_public_url(path)
+        return public_url
+    except Exception as e:
+        current_app.logger.error(f"Upload failed to {bucket}/{path}: {str(e)}")
+        raise
 
 
 def _student_row():
@@ -83,66 +124,85 @@ def portfolio_upload():
         cycle = request.form.get("cycle", "").strip()
         year = request.form.get("year", type=int)
         term = request.form.get("term", type=int)
+        assessment_number = request.form.get("assessment_number", "").strip().upper()
 
-        if not unit_id or not class_id or not assessment_type or not title:
+        if not unit_id or not class_id or not assessment_type or not title or not assessment_number:
             flash("Missing required fields.", "error")
             return redirect(url_for("portfolio.portfolio_upload"))
 
         script = request.files.get("script")
-        if not script or not script.filename or not allowed_file(script.filename):
-            flash("Please upload a valid script file.", "error")
+        if not script or not script.filename or not allowed_file(script.filename) or not validate_pdf(script):
+            flash("Please upload a valid PDF script file.", "error")
             return redirect(url_for("portfolio.portfolio_upload"))
 
-        # For MVP integration with your existing schema, we store only file names.
-        # Your current attendance system already supports evidence via other modules.
-        # Here we keep it minimal and non-destructive.
-        script_filename = secure_filename(script.filename)
-
-        # Insert assessment record
+        # Generate storage path & upload PDF to Supabase Storage
         trainee_id = student.get("user_id") or student.get("id")
+        script_path = generate_storage_path(trainee_id, str(class_id), str(unit_id), script.filename)
+        
+        bucket_scripts = current_app.config.get("BUCKET_SCRIPTS", "assessment-scripts")
+        bucket_evidence = current_app.config.get("BUCKET_EVIDENCE", "assessment-evidence")
+        
+        try:
+            script_url = upload_to_supabase(db, bucket_scripts, script, script_path)
+        except Exception as e:
+            flash(f'Upload failed: {str(e)}', 'error')
+            return redirect(url_for("portfolio.portfolio_upload"))
+
+        # Handle optional evidence files
+        evidence_paths = []
+        evidence_files = request.files.getlist("evidence") if "evidence" in request.files else []
+        for ev in evidence_files:
+            if not ev or not ev.filename:
+                continue
+            if not allowed_file(ev.filename):
+                flash(f"Unsupported evidence file type: {ev.filename}", "error")
+                return redirect(url_for("portfolio.portfolio_upload"))
+            
+            evidence_path = generate_storage_path(trainee_id, str(class_id), str(unit_id), ev.filename)
+            try:
+                upload_to_supabase(db, bucket_evidence, ev, evidence_path)
+                evidence_paths.append(evidence_path)
+            except Exception as e:
+                current_app.logger.warning(f"Evidence upload failed: {e}")
+                flash(f"Warning: Evidence file '{ev.filename}' failed to upload.", 'warning')
+
+        # Insert assessment record with storage paths
         ins = db.table("assessments").insert({
             "trainee_id": trainee_id,
             "unit_id": unit_id,
             "class_id": class_id,
             "assessment_type": assessment_type,
             "title": title,
+            "assessment_number": assessment_number,
             "cycle": cycle or None,
             "year": year or now_eat_naive().year,
             "term": term or 1,
             "status": "submitted",
-            "script_file_name": script_filename,
+            "script_path": script_path,
+            "script_file_name": secure_filename(script.filename),
+            "evidence_paths": evidence_paths,
             "uploaded_at": now_eat_naive().isoformat(),
         }).execute()
 
         assessment_id = ins.data[0]["id"] if ins.data else None
 
-        # Evidence files (optional) — supports multi-select for images/videos/files
-        evidence_files = request.files.getlist("evidence") if "evidence" in request.files else []
-        for ev in evidence_files:
-            if not ev or not ev.filename:
-                continue
-            # Enforce allowed extensions for safety
-            if not allowed_file(ev.filename):
-                flash(f"Unsupported evidence file type: {ev.filename}", "error")
-                return redirect(url_for("portfolio.portfolio_upload"))
-
-            # MVP integration with your existing DB schema:
-            # store evidence file name only (uploading to Supabase Storage is handled by other modules in your system).
-            ev_name = secure_filename(ev.filename)
+        # Also insert evidence records for tracking
+        for ev_path in evidence_paths:
             db.table("evidence").insert({
                 "assessment_id": assessment_id,
-                "file_name": ev_name,
+                "file_path": ev_path,
+                "file_name": ev_path.split('/')[-1],
                 "uploaded_at": now_eat_naive().isoformat(),
             }).execute()
-
 
         write_audit_log("portfolio_upload", target=str(assessment_id), detail={
             "assessment_type": assessment_type,
             "unit_id": unit_id,
             "class_id": class_id,
+            "assessment_number": assessment_number,
         })
 
-        flash("Assessment submitted successfully!", "success")
+        flash("Assessment submitted successfully! Awaiting review.", "success")
         return redirect(url_for("portfolio.portfolio_trainee_dashboard"))
 
     # GET: dropdowns
